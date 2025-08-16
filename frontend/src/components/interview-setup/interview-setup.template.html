@@ -1,0 +1,144 @@
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card interview-setup-card">
+                <div class="card-header bg-primary text-white text-center">
+                    <h4 class="mb-0">
+                        <i class="fas fa-cog me-2"></i>
+                        Interview Setup
+                    </h4>
+                </div>
+                <div class="card-body p-4">
+                    <!-- Error Alert -->
+                    <div ng-if="vm.error" class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        {{vm.error}}
+                    </div>
+
+                    <div class="row">
+                        <!-- Left Column - Form Fields -->
+                        <div class="col-md-6">
+                            <form ng-submit="vm.startInterview()">
+                                <div class="mb-3">
+                                    <label for="targetRole" class="form-label fw-bold">Target Role *</label>
+                                    <select id="targetRole" class="form-select" ng-model="vm.config.target_role" required>
+                                        <option value="">Select a role...</option>
+                                        <option value="Marketing Manager">Marketing Manager</option>
+                                        <option value="Software Engineer">Software Engineer</option>
+                                        <option value="Product Manager">Product Manager</option>
+                                        <option value="Data Scientist">Data Scientist</option>
+                                        <option value="Sales Representative">Sales Representative</option>
+                                        <option value="Business Analyst">Business Analyst</option>
+                                        <option value="Project Manager">Project Manager</option>
+                                        <option value="UX Designer">UX Designer</option>
+                                    </select>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="interviewType" class="form-label fw-bold">Interview Type</label>
+                                    <select id="interviewType" class="form-select" ng-model="vm.config.session_type" required>
+                                        <option value="">Select type...</option>
+                                        <option value="mixed">Mixed Interview</option>
+                                        <option value="behavioral">Behavioral Questions</option>
+                                        <option value="technical">Technical Questions</option>
+                                        <option value="hr">HR</option>
+                                    </select>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="difficultyLevel" class="form-label fw-bold">Difficulty Level</label>
+                                    <select id="difficultyLevel" class="form-select" ng-model="vm.config.difficulty" required>
+                                        <option value="">Select difficulty...</option>
+                                        <option value="beginner">Beginner</option>
+                                        <option value="intermediate">Intermediate</option>
+                                        <option value="advanced">Advanced</option>
+                                    </select>
+                                </div>
+
+                                <!-- Duration and Question Count -->
+                                <div class="row mb-4">
+                                    <div class="col-6">
+                                        <label for="duration" class="form-label fw-bold">Duration (minutes)</label>
+                                        <input id="duration" type="number" class="form-control" ng-model="vm.config.duration" min="5" max="120">
+                                    </div>
+                                    <div class="col-6">
+                                        <label for="questionCount" class="form-label fw-bold">Number of Questions</label>
+                                        <input id="questionCount" type="number" class="form-control" ng-model="vm.config.question_count" min="1" max="20">
+                                    </div>
+                                </div>
+
+                                <!-- Action Buttons -->
+                                <div class="d-flex gap-2 mb-3">
+                                    <button type="button" class="btn btn-secondary" ng-click="vm.goToDashboard()">
+                                        <i class="fas fa-arrow-left me-2"></i>
+                                        Back to Dashboard
+                                    </button>
+                                    <button type="button" class="btn btn-success" ng-click="vm.startTest()">
+                                        <i class="fas fa-play me-2"></i>
+                                        Quick Test
+                                    </button>
+                                    <button type="submit" class="btn btn-primary" ng-disabled="vm.loading || !vm.cameraReady">
+                                        <span ng-if="vm.loading">
+                                            <i class="fas fa-spinner fa-spin me-2"></i>
+                                            Starting...
+                                        </span>
+                                        <span ng-if="!vm.loading">
+                                            <i class="fas fa-video me-2"></i>
+                                            Start Interview
+                                        </span>
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <!-- Right Column - Camera Preview -->
+                        <div class="col-md-6">
+                            <div>
+                                <label class="form-label fw-bold">Camera Preview</label>
+                                <div class="camera-preview-container">
+                                    <div class="camera-preview-box border rounded overflow-hidden mb-3" style="height: 300px; background: #f8f9fa;">
+                                        <video id="setupPreviewVideo" class="w-100 h-100" autoplay muted ng-show="vm.cameraActive" style="object-fit: cover;"></video>
+                                        
+                                        <!-- Camera Error State -->
+                                        <div ng-if="vm.cameraError" class="d-flex align-items-center justify-content-center h-100 text-center">
+                                            <div>
+                                                <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
+                                                <p class="text-muted">{{vm.cameraError}}</p>
+                                                <button class="btn btn-sm btn-outline-primary" ng-click="vm.startCamera()">
+                                                    <i class="fas fa-redo me-1"></i>
+                                                    Retry
+                                                </button>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Camera Loading State -->
+                                        <div ng-if="!vm.cameraActive && !vm.cameraError" class="d-flex align-items-center justify-content-center h-100">
+                                            <div class="text-center">
+                                                <i class="fas fa-video fa-3x text-muted mb-3"></i>
+                                                <p class="text-muted">Initializing camera...</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Camera Status -->
+                                    <div class="d-flex align-items-center justify-content-between">
+                                        <div class="d-flex align-items-center">
+                                            <span class="badge me-2" ng-class="vm.cameraActive ? 'bg-success' : 'bg-secondary'">
+                                                <i class="fas fa-video me-1"></i>
+                                                {{vm.cameraActive ? 'Camera Ready' : 'Camera Off'}}
+                                            </span>
+                                        </div>
+                                        <button class="btn btn-sm btn-outline-secondary" ng-click="vm.cameraActive ? vm.stopCamera() : vm.startCamera()">
+                                            <i class="fas" ng-class="vm.cameraActive ? 'fa-stop' : 'fa-play'"></i>
+                                            {{vm.cameraActive ? 'Stop' : 'Start'}}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

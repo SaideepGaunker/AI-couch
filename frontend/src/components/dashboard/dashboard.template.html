@@ -1,0 +1,256 @@
+<div class="container-fluid py-4">
+    <!-- Welcome Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h2 class="card-title mb-2">
+                                <i class="fas fa-user-circle me-2"></i>
+                                Welcome back, {{vm.user.name || 'User'}}!
+                            </h2>
+                            <p class="card-text mb-0">
+                                Ready to practice your interview skills? Let's get started with your preparation.
+                            </p>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <a href="#!/interview" class="btn btn-light btn-lg">
+                                <i class="fas fa-play me-2"></i>
+                                Start Practice
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="fas fa-microphone fa-2x text-primary mb-2"></i>
+                    <h5 class="card-title">{{vm.stats.total_sessions || 0}}</h5>
+                    <p class="card-text text-muted">Total Sessions</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="fas fa-clock fa-2x text-success mb-2"></i>
+                    <h5 class="card-title">{{vm.stats.total_time || 0}}m</h5>
+                    <p class="card-text text-muted">Practice Time</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="fas fa-chart-line fa-2x text-warning mb-2"></i>
+                    <h5 class="card-title">{{vm.stats.avg_score || 0}}%</h5>
+                    <p class="card-text text-muted">Average Score</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="fas fa-trophy fa-2x text-info mb-2"></i>
+                    <h5 class="card-title">{{vm.stats.improvement || 0}}%</h5>
+                    <p class="card-text text-muted">Improvement</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Row -->
+    <div class="row">
+        <!-- Recent Sessions -->
+        <div class="col-lg-8 mb-4">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-history me-2"></i>
+                        Recent Sessions
+                    </h5>
+                    <a href="#!/progress" class="btn btn-sm btn-outline-primary">
+                        View All
+                    </a>
+                </div>
+                <div class="card-body">
+                    <div ng-if="vm.recentSessions.length === 0" class="text-center py-4">
+                        <i class="fas fa-microphone fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">No sessions yet. Start your first practice session!</p>
+                        <a href="#!/interview" class="btn btn-primary">
+                            <i class="fas fa-play me-2"></i>
+                            Start Now
+                        </a>
+                    </div>
+                    
+                    <div ng-if="vm.recentSessions.length > 0">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Role</th>
+                                        <th>Type</th>
+                                        <th>Score</th>
+                                        <th>Duration</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr ng-repeat="session in vm.recentSessions">
+                                        <td>{{session.created_at | date:'MMM dd, yyyy'}}</td>
+                                        <td>
+                                            <span class="badge bg-primary">{{session.target_role}}</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge" ng-class="{
+                                                'bg-success': session.session_type === 'behavioral',
+                                                'bg-info': session.session_type === 'technical',
+                                                'bg-warning': session.session_type === 'mixed',
+                                                'bg-primary': session.session_type === 'hr'
+                                            }">{{session.session_type}}</span>
+                                        </td>
+                                        <td>
+                                            <span class="fw-bold" ng-class="{
+                                                'text-success': session.overall_score >= 80,
+                                                'text-warning': session.overall_score >= 60 && session.overall_score < 80,
+                                                'text-danger': session.overall_score < 60
+                                            }">{{session.overall_score || 'N/A'}}%</span>
+                                        </td>
+                                        <td>{{session.duration || 0}}m</td>
+                                        <td>
+                                            <a href="#!/interview/feedback/{{session.id}}" class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-eye me-1"></i>
+                                                View
+                                            </a>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions & Progress -->
+        <div class="col-lg-4">
+            <!-- Quick Actions -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-bolt me-2"></i>
+                        Quick Actions
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="#!/interview" class="btn btn-primary">
+                            <i class="fas fa-microphone me-2"></i>
+                            Start Interview
+                        </a>
+                        <a href="#!/progress" class="btn btn-outline-secondary">
+                            <i class="fas fa-chart-bar me-2"></i>
+                            View Progress
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Progress Chart -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-line me-2"></i>
+                        Progress Overview
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div ng-if="vm.progressData.length === 0" class="text-center py-3">
+                        <i class="fas fa-chart-line fa-2x text-muted mb-2"></i>
+                        <p class="text-muted mb-0">Complete sessions to see progress</p>
+                    </div>
+                    
+                    <div ng-if="vm.progressData.length > 0">
+                        <!-- Simple progress visualization -->
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between mb-1">
+                                <span class="text-muted">Overall Performance</span>
+                                <span class="fw-bold">{{vm.stats.avg_score || 0}}%</span>
+                            </div>
+                            <div class="progress">
+                                <div class="progress-bar" 
+                                     ng-class="{
+                                         'bg-success': vm.stats.avg_score >= 80,
+                                         'bg-warning': vm.stats.avg_score >= 60 && vm.stats.avg_score < 80,
+                                         'bg-danger': vm.stats.avg_score < 60
+                                     }"
+                                     ng-style="{'width': (vm.stats.avg_score || 0) + '%'}"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="row text-center">
+                            <div class="col-6">
+                                <div class="border-end">
+                                    <h6 class="text-success mb-1">{{vm.stats.sessions_this_week || 0}}</h6>
+                                    <small class="text-muted">This Week</small>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <h6 class="text-primary mb-1">{{vm.stats.streak || 0}}</h6>
+                                <small class="text-muted">Day Streak</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tips Section -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card bg-light">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="fas fa-lightbulb me-2 text-warning"></i>
+                        Interview Tips
+                    </h5>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="d-flex align-items-start mb-2">
+                                <i class="fas fa-check-circle text-success me-2 mt-1"></i>
+                                <div>
+                                    <strong>Practice Regularly:</strong> Consistency is key to improvement.
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="d-flex align-items-start mb-2">
+                                <i class="fas fa-check-circle text-success me-2 mt-1"></i>
+                                <div>
+                                    <strong>Review Feedback:</strong> Learn from each session's analysis.
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="d-flex align-items-start mb-2">
+                                <i class="fas fa-check-circle text-success me-2 mt-1"></i>
+                                <div>
+                                    <strong>Stay Confident:</strong> Practice builds confidence naturally.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

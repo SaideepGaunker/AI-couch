@@ -1,0 +1,254 @@
+<div class="container-fluid interview-chat-container" style="height: 100vh; background: #f8f9fa;">
+    <!-- Header -->
+    <div class="row mb-2">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-body py-2">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center">
+                            <h5 class="mb-0 me-3">
+                                <i class="fas fa-robot text-primary me-2"></i>
+                                AI Interview Coach
+                            </h5>
+                            <span class="badge bg-success" ng-if="vm.session">
+                                Question {{vm.currentQuestionIndex + 1}} of {{vm.questions.length}}
+                            </span>
+                        </div>
+                        <div class="d-flex align-items-center gap-3">
+                            <!-- Session Timer -->
+                            <div class="text-center">
+                                <small class="text-muted d-block">Session Time</small>
+                                <span class="badge bg-primary">{{vm.formatTime(vm.sessionTimeRemaining)}}</span>
+                            </div>
+                            <!-- Question Timer -->
+                            <div class="text-center">
+                                <small class="text-muted d-block">Question Time</small>
+                                <span class="badge" ng-class="vm.questionTimeRemaining < 30 ? 'bg-danger' : 'bg-info'">
+                                    {{vm.formatTime(vm.questionTimeRemaining)}}
+                                </span>
+                            </div>
+                            <!-- End Session Button -->
+                            <button class="btn btn-outline-danger btn-sm" ng-click="vm.endSession()">
+                                <i class="fas fa-stop me-1"></i>
+                                End Session
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Split Layout -->
+    <div class="row" style="height: calc(100vh - 120px);">
+        <!-- Left Side - Webcam -->
+        <div class="col-md-5">
+            <div class="card shadow h-100">
+                <div class="card-header bg-dark text-white">
+                    <h6 class="mb-0">
+                        <i class="fas fa-video me-2"></i>
+                        Video Feed
+                    </h6>
+                </div>
+                <div class="card-body p-0 d-flex flex-column">
+                    <!-- Video Container -->
+                    <div class="flex-grow-1 position-relative bg-dark">
+                        <video id="interviewVideo" 
+                               class="w-100 h-100" 
+                               autoplay 
+                               muted 
+                               style="object-fit: cover;"
+                               ng-show="vm.cameraActive"></video>
+                        
+                        <!-- Camera Error State -->
+                        <div ng-if="vm.cameraError" class="position-absolute top-50 start-50 translate-middle text-center text-white">
+                            <i class="fas fa-exclamation-triangle fa-3x mb-3"></i>
+                            <p>{{vm.cameraError}}</p>
+                            <button class="btn btn-outline-light btn-sm" ng-click="vm.startCamera()">
+                                <i class="fas fa-redo me-1"></i>
+                                Retry Camera
+                            </button>
+                        </div>
+                        
+                        <!-- Camera Loading State -->
+                        <div ng-if="!vm.cameraActive && !vm.cameraError" class="position-absolute top-50 start-50 translate-middle text-center text-white">
+                            <i class="fas fa-video fa-3x mb-3"></i>
+                            <p>Initializing camera...</p>
+                        </div>
+
+                        <!-- Recording Indicator -->
+                        <div ng-if="vm.isRecording" class="position-absolute top-0 end-0 m-3">
+                            <span class="badge bg-danger">
+                                <i class="fas fa-circle me-1 blink"></i>
+                                REC
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Camera Controls -->
+                    <div class="p-3 bg-light border-top">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge" ng-class="vm.cameraActive ? 'bg-success' : 'bg-secondary'">
+                                    <i class="fas fa-video me-1"></i>
+                                    {{vm.cameraActive ? 'Camera On' : 'Camera Off'}}
+                                </span>
+                                <span class="badge" ng-class="vm.isRecording ? 'bg-danger' : 'bg-secondary'">
+                                    <i class="fas fa-circle me-1"></i>
+                                    {{vm.isRecording ? 'Recording' : 'Standby'}}
+                                </span>
+                            </div>
+                            <button class="btn btn-sm btn-outline-secondary" ng-click="vm.cameraActive ? vm.stopCamera() : vm.startCamera()">
+                                <i class="fas" ng-class="vm.cameraActive ? 'fa-stop' : 'fa-play'"></i>
+                                {{vm.cameraActive ? 'Stop' : 'Start'}}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Side - Chat Interface -->
+        <div class="col-md-7">
+            <div class="card shadow h-100">
+                <div class="card-header bg-primary text-white">
+                    <h6 class="mb-0">
+                        <i class="fas fa-comments me-2"></i>
+                        Interview Chat
+                    </h6>
+                </div>
+                <div class="card-body p-0 d-flex flex-column">
+                    <!-- Chat Messages -->
+                    <div id="chatContainer" class="flex-grow-1 p-3" style="overflow-y: auto; max-height: calc(100vh - 400px);">
+                        <div ng-repeat="message in vm.chatMessages" class="mb-3">
+                            <!-- AI Message -->
+                            <div ng-if="message.sender === 'ai'" class="d-flex align-items-start">
+                                <div class="avatar-circle bg-primary text-white me-3 flex-shrink-0" style="width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                                    <i class="fas fa-robot"></i>
+                                </div>
+                                <div class="message-bubble bg-light p-3 rounded-3 shadow-sm" style="max-width: 80%;">
+                                    <p class="mb-1">{{message.message}}</p>
+                                    <small class="text-muted">{{message.timestamp | date:'HH:mm'}}</small>
+                                </div>
+                            </div>
+                            
+                            <!-- User Message -->
+                            <div ng-if="message.sender === 'user'" class="d-flex align-items-start justify-content-end">
+                                <div class="message-bubble bg-success text-white p-3 rounded-3 shadow-sm me-3" style="max-width: 80%;">
+                                    <p class="mb-1">{{message.message}}</p>
+                                    <small class="text-white-50">{{message.timestamp | date:'HH:mm'}}</small>
+                                </div>
+                                <div class="avatar-circle bg-success text-white flex-shrink-0" style="width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                                    <i class="fas fa-user"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Loading indicator -->
+                        <div ng-if="vm.loading" class="d-flex align-items-start">
+                            <div class="avatar-circle bg-primary text-white me-3 flex-shrink-0" style="width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                                <i class="fas fa-robot"></i>
+                            </div>
+                            <div class="message-bubble bg-light p-3 rounded-3 shadow-sm">
+                                <div class="d-flex align-items-center">
+                                    <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+                                    <span>Processing your answer...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Error Alert -->
+                    <div ng-if="vm.error" class="alert alert-danger mx-3 mb-0">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        {{vm.error}}
+                        <button type="button" class="btn-close float-end" ng-click="vm.error = ''"></button>
+                    </div>
+
+                    <!-- Input Area -->
+                    <div class="border-top p-3">
+                        <!-- Audio Status -->
+                        <div class="d-flex align-items-center justify-content-center mb-3">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge" ng-class="vm.isListening ? 'bg-success' : 'bg-secondary'">
+                                    <i class="fas fa-microphone me-1"></i>
+                                    {{vm.isListening ? 'Listening...' : 'Mic Off'}}
+                                </span>
+                                <span class="badge" ng-class="vm.isSpeaking ? 'bg-info' : 'bg-secondary'">
+                                    <i class="fas fa-volume-up me-1"></i>
+                                    {{vm.isSpeaking ? 'AI Speaking' : 'AI Silent'}}
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Answer Input -->
+                        <div class="mb-3">
+                            <textarea class="form-control" 
+                                      ng-model="vm.currentAnswer" 
+                                      placeholder="Your answer will appear here as you speak, or you can type directly..."
+                                      rows="3"
+                                      ng-disabled="vm.loading"></textarea>
+                        </div>
+
+                        <!-- Control Buttons -->
+                        <div class="d-flex justify-content-center gap-2 flex-wrap">
+                            <!-- Voice Input Button -->
+                            <button class="btn" 
+                                    ng-class="vm.isListening ? 'btn-danger' : 'btn-success'"
+                                    ng-click="vm.isListening ? vm.stopListening() : vm.startListening()"
+                                    ng-disabled="vm.loading || vm.isSpeaking">
+                                <i class="fas" ng-class="vm.isListening ? 'fa-stop' : 'fa-microphone'"></i>
+                                {{vm.isListening ? 'Stop' : 'Speak'}}
+                            </button>
+
+                            <!-- Submit Answer Button -->
+                            <button class="btn btn-primary" 
+                                    ng-click="vm.submitAnswer()" 
+                                    ng-disabled="vm.loading || !vm.currentAnswer.trim() || vm.isListening">
+                                <i class="fas fa-paper-plane me-1"></i>
+                                Submit
+                            </button>
+
+                            <!-- Skip Question Button -->
+                            <button class="btn btn-outline-warning" 
+                                    ng-click="vm.skipQuestion()" 
+                                    ng-disabled="vm.loading || vm.isListening">
+                                <i class="fas fa-forward me-1"></i>
+                                Skip
+                            </button>
+
+                            <!-- Repeat Question Button -->
+                            <button class="btn btn-outline-info" 
+                                    ng-click="vm.speakQuestion(vm.currentQuestion.content || vm.currentQuestion.question_text)" 
+                                    ng-disabled="vm.loading || vm.isSpeaking || vm.isListening">
+                                <i class="fas fa-redo me-1"></i>
+                                Repeat
+                            </button>
+                        </div>
+
+                        <!-- Transcribed Text Display -->
+                        <div ng-if="vm.transcribedText && vm.transcribedText !== vm.currentAnswer" class="mt-2">
+                            <small class="text-muted">Live transcription:</small>
+                            <div class="bg-light p-2 rounded">
+                                <small>{{vm.transcribedText}}</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Custom CSS for blinking recording indicator -->
+<style>
+.blink {
+    animation: blink-animation 1s steps(5, start) infinite;
+}
+
+@keyframes blink-animation {
+    to {
+        visibility: hidden;
+    }
+}
+</style>

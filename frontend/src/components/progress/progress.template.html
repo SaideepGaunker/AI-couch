@@ -1,0 +1,377 @@
+<!-- Progress Tracking Template -->
+<div class="container py-4">
+    <div class="row">
+        <div class="col-12">
+            <h2 class="fw-bold mb-4">
+                <i class="fas fa-chart-line me-2"></i>
+                Your Progress
+            </h2>
+        </div>
+    </div>
+    
+    <!-- Error Alert -->
+    <div ng-if="vm.error" class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="fas fa-exclamation-triangle me-2"></i>
+        {{vm.error}}
+        <button type="button" class="btn-close" ng-click="vm.error = ''" title="Close error message" aria-label="Close error message"></button>
+    </div>
+    
+    <!-- Loading State -->
+    <div ng-if="vm.loading" class="text-center py-5">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="mt-3 text-muted">Loading your progress data...</p>
+    </div>
+    
+    <!-- Progress Content -->
+    <div ng-if="!vm.loading">
+        <!-- Navigation Tabs -->
+        <ul class="nav nav-tabs mb-4">
+            <li class="nav-item">
+                <button 
+                    type="button"
+                    class="nav-link"
+                    ng-class="{'active': vm.activeTab === 'overview'}"
+                    ng-click="vm.setActiveTab('overview')"
+                    aria-label="Overview tab" title="Overview">
+                    <i class="fas fa-tachometer-alt me-2"></i>
+                    Overview
+                </button>
+            </li>
+            <li class="nav-item">
+                <button 
+                    type="button"
+                    class="nav-link"
+                    ng-class="{'active': vm.activeTab === 'sessions'}"
+                    ng-click="vm.setActiveTab('sessions')"
+                    aria-label="Session History tab" title="Session History">
+                    <i class="fas fa-history me-2"></i>
+                    Session History
+                </button>
+            </li>
+            <li class="nav-item">
+                <button 
+                    type="button"
+                    class="nav-link"
+                    ng-class="{'active': vm.activeTab === 'trends'}"
+                    ng-click="vm.setActiveTab('trends')"
+                    aria-label="Trends tab" title="Trends">
+                    <i class="fas fa-chart-area me-2"></i>
+                    Trends
+                </button>
+            </li>
+        </ul>
+        
+        <!-- Overview Tab -->
+        <div ng-if="vm.activeTab === 'overview'">
+            <!-- Key Metrics -->
+            <div class="row mb-4">
+                <div class="col-lg-3 col-md-6 mb-3">
+                    <div class="card dashboard-card h-100">
+                        <div class="card-body text-center">
+                            <div class="stat-card p-3">
+                                <i class="fas fa-trophy fa-2x mb-2 text-warning"></i>
+                                <h3 class="fw-bold mb-1">{{vm.progressData.overall_score}}</h3>
+                                <p class="mb-0">Overall Score</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-3 col-md-6 mb-3">
+                    <div class="card dashboard-card h-100">
+                        <div class="card-body text-center">
+                            <div class="stat-card p-3">
+                                <i class="fas fa-check-circle fa-2x mb-2 text-success"></i>
+                                <h3 class="fw-bold mb-1">{{vm.progressData.sessions_completed}}</h3>
+                                <p class="mb-0">Sessions Completed</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-3 col-md-6 mb-3">
+                    <div class="card dashboard-card h-100">
+                        <div class="card-body text-center">
+                            <div class="p-3">
+                                <i class="{{vm.getImprovementIcon(vm.progressData.improvement_rate)}} fa-2x mb-2 {{vm.getImprovementTrend(vm.progressData.improvement_rate)}}"></i>
+                                <h3 class="fw-bold mb-1">{{vm.progressData.improvement_rate > 0 ? '+' : ''}}{{vm.progressData.improvement_rate}}%</h3>
+                                <p class="mb-0">Improvement Rate</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-3 col-md-6 mb-3">
+                    <div class="card dashboard-card h-100">
+                        <div class="card-body text-center">
+                            <div class="stat-card p-3">
+                                <i class="fas fa-clock fa-2x mb-2 text-info"></i>
+                                <h3 class="fw-bold mb-1">{{vm.progressData.practice_hours || 0}}</h3>
+                                <p class="mb-0">Practice Hours</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Skill Breakdown -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card dashboard-card">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="fas fa-chart-bar me-2"></i>
+                                Skill Breakdown
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <h6>Content Quality</h6>
+                                    <div class="progress mb-2">
+                                        <div class="progress-bar bg-primary progress-bar-content" 
+                                             ng-style="{'width': vm.progressData.skill_breakdown.content_quality + '%'}"></div>
+                                    </div>
+                                    <div class="d-flex justify-content-between">
+                                        <small>{{vm.progressData.skill_breakdown.content_quality}}/100</small>
+                                        <span class="badge" ng-class="'bg-' + vm.getScoreColor(vm.progressData.skill_breakdown.content_quality)">
+                                            <i class="{{vm.getScoreIcon(vm.progressData.skill_breakdown.content_quality)}} me-1"></i>
+                                            {{vm.progressData.skill_breakdown.content_quality >= 80 ? 'Excellent' : 
+                                              vm.progressData.skill_breakdown.content_quality >= 60 ? 'Good' : 'Needs Work'}}
+                                        </span>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-4 mb-3">
+                                    <h6>Body Language</h6>
+                                    <div class="progress mb-2">
+                                        <div class="progress-bar bg-success progress-bar-body" 
+                                             ng-style="{'width': vm.progressData.skill_breakdown.body_language + '%'}"></div>
+                                    </div>
+                                    <div class="d-flex justify-content-between">
+                                        <small>{{vm.progressData.skill_breakdown.body_language}}/100</small>
+                                        <span class="badge" ng-class="'bg-' + vm.getScoreColor(vm.progressData.skill_breakdown.body_language)">
+                                            <i class="{{vm.getScoreIcon(vm.progressData.skill_breakdown.body_language)}} me-1"></i>
+                                            {{vm.progressData.skill_breakdown.body_language >= 80 ? 'Excellent' : 
+                                              vm.progressData.skill_breakdown.body_language >= 60 ? 'Good' : 'Needs Work'}}
+                                        </span>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-4 mb-3">
+                                    <h6>Voice & Tone</h6>
+                                    <div class="progress mb-2">
+                                        <div class="progress-bar bg-info progress-bar-voice" 
+                                             ng-style="{'width': vm.progressData.skill_breakdown.tone_confidence + '%'}"></div>
+                                    </div>
+                                    <div class="d-flex justify-content-between">
+                                        <small>{{vm.progressData.skill_breakdown.tone_confidence}}/100</small>
+                                        <span class="badge" ng-class="'bg-' + vm.getScoreColor(vm.progressData.skill_breakdown.tone_confidence)">
+                                            <i class="{{vm.getScoreIcon(vm.progressData.skill_breakdown.tone_confidence)}} me-1"></i>
+                                            {{vm.progressData.skill_breakdown.tone_confidence >= 80 ? 'Excellent' : 
+                                              vm.progressData.skill_breakdown.tone_confidence >= 60 ? 'Good' : 'Needs Work'}}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Recommendations -->
+            <div class="row mb-4">
+                <div class="col-md-8">
+                    <div class="card dashboard-card">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="fas fa-lightbulb me-2"></i>
+                                Recommendations
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div ng-if="vm.progressData.recommendations && vm.progressData.recommendations.length > 0">
+                                <div ng-repeat="recommendation in vm.progressData.recommendations" class="mb-3 p-3 border-start border-4 border-primary bg-light rounded">
+                                    <div class="d-flex align-items-start">
+                                        <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 24px; height: 24px; font-size: 12px; font-weight: bold;">
+                                            {{$index + 1}}
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <p class="mb-0">{{recommendation}}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div ng-if="!vm.progressData.recommendations || vm.progressData.recommendations.length === 0" class="text-center py-4">
+                                <i class="fas fa-chart-line fa-2x text-muted mb-3"></i>
+                                <h6 class="text-muted mb-2">No recommendations yet</h6>
+                                <p class="text-muted mb-0">Complete more interview sessions to get personalized recommendations.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="card dashboard-card">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="fas fa-target me-2"></i>
+                                Goals
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between mb-1">
+                                    <small>Weekly Practice Goal</small>
+                                    <small>{{vm.progressData.goals.weekly_practice.current}}/{{vm.progressData.goals.weekly_practice.target}} sessions</small>
+                                </div>
+                                <div class="progress">
+                                    <div class="progress-bar" 
+                                         ng-style="{'width': Math.min(100, (vm.progressData.goals.weekly_practice.current / vm.progressData.goals.weekly_practice.target * 100)) + '%'}"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between mb-1">
+                                    <small>Score Target</small>
+                                    <small>{{vm.progressData.goals.score_improvement.current}}/{{vm.progressData.goals.score_improvement.target}}</small>
+                                </div>
+                                <div class="progress">
+                                    <div class="progress-bar bg-warning" 
+                                         ng-style="{'width': (vm.progressData.goals.score_improvement.current / vm.progressData.goals.score_improvement.target * 100) + '%'}"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="text-center mt-3">
+                                <button class="btn btn-outline-primary btn-sm" ng-click="vm.startNewSession()">
+                                    <i class="fas fa-play me-2"></i>Start Practice
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Session History Tab -->
+        <div ng-if="vm.activeTab === 'sessions'">
+            <div class="card dashboard-card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-history me-2"></i>
+                        Session History
+                    </h5>
+                    <button type="button" class="btn btn-sm btn-outline-primary" ng-click="vm.exportProgress()">
+                        <i class="fas fa-download me-1"></i>
+                        Export Data
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div ng-if="vm.sessionHistory.length === 0" class="text-center py-4">
+                        <i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i>
+                        <h6 class="text-muted">No sessions yet</h6>
+                        <p class="text-muted">Start practicing to see your session history here.</p>
+                    </div>
+                    
+                    <div ng-if="vm.sessionHistory.length > 0">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Type</th>
+                                        <th>Role</th>
+                                        <th>Score</th>
+                                        <th>Duration</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr ng-repeat="session in vm.sessionHistory">
+                                        <td>{{vm.formatDate(session.created_at)}}</td>
+                                        <td>
+                                            <i class="{{vm.getSessionTypeIcon(session.session_type)}} me-1"></i>
+                                            {{session.session_type | uppercase}}
+                                        </td>
+                                        <td>{{session.target_role}}</td>
+                                        <td>
+                                            <span class="badge" ng-class="'bg-' + vm.getScoreColor(session.overall_score)">
+                                                {{session.overall_score}}/100
+                                            </span>
+                                        </td>
+                                        <td>{{session.duration}} min</td>
+                                        <td>
+                                            <span class="badge" 
+                                                  ng-class="{'bg-success': session.status === 'completed', 
+                                                           'bg-warning': session.status === 'paused',
+                                                           'bg-primary': session.status === 'active'}">
+                                                {{session.status | uppercase}}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <button 
+                                                type="button"
+                                                class="btn btn-sm btn-outline-primary"
+                                                ng-click="vm.viewSessionDetails(session.id)"
+                                                title="View session details">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Trends Tab -->
+        <div ng-if="vm.activeTab === 'trends'">
+            <div class="card dashboard-card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-area me-2"></i>
+                        Performance Trends (Last 30 Days)
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div ng-if="Object.keys(vm.trends).length === 0" class="text-center py-4">
+                        <i class="fas fa-chart-line fa-3x text-muted mb-3"></i>
+                        <h6 class="text-muted">No trend data available</h6>
+                        <p class="text-muted">Complete more sessions to see your performance trends.</p>
+                    </div>
+                    
+                    <div ng-if="Object.keys(vm.trends).length > 0">
+                        <p class="text-muted">Trend visualization would be implemented here using a charting library like Chart.js</p>
+                        
+                        <!-- Placeholder for charts -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="border rounded p-3 mb-3">
+                                    <h6>Score Trends</h6>
+                                    <div class="text-center py-4 text-muted">
+                                        <i class="fas fa-chart-line fa-2x"></i>
+                                        <p class="mt-2">Score progression chart</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="border rounded p-3 mb-3">
+                                    <h6>Session Frequency</h6>
+                                    <div class="text-center py-4 text-muted">
+                                        <i class="fas fa-chart-bar fa-2x"></i>
+                                        <p class="mt-2">Practice frequency chart</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

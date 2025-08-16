@@ -1,0 +1,334 @@
+<div class="container py-4">
+    <div class="row">
+        <div class="col-12">
+            <h2 class="fw-bold mb-4">
+                <i class="fas fa-user me-2"></i>
+                Profile Settings
+            </h2>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Sidebar Navigation -->
+        <div class="col-md-3 mb-4">
+            <div class="card">
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        <button type="button" class="list-group-item list-group-item-action d-flex align-items-center"
+                            ng-class="{'active': vm.activeTab === 'profile'}" ng-click="vm.setActiveTab('profile')"
+                            aria-label="Profile Information" title="Profile Information">
+                            <i class="fas fa-user me-3 text-primary"></i>
+                            Profile Information
+                        </button>
+                        <button type="button" class="list-group-item list-group-item-action d-flex align-items-center"
+                            ng-class="{'active': vm.activeTab === 'password'}" ng-click="vm.setActiveTab('password')"
+                            aria-label="Change Password" title="Change Password">
+                            <i class="fas fa-lock me-3 text-warning"></i>
+                            Change Password
+                        </button>
+                        <button type="button" class="list-group-item list-group-item-action d-flex align-items-center"
+                            ng-class="{'active': vm.activeTab === 'settings'}" ng-click="vm.setActiveTab('settings')"
+                            aria-label="Settings" title="Settings">
+                            <i class="fas fa-cog me-3 text-info"></i>
+                            Settings
+                        </button>
+                        <button type="button" class="list-group-item list-group-item-action d-flex align-items-center"
+                            ng-class="{'active': vm.activeTab === 'privacy'}" ng-click="vm.setActiveTab('privacy')"
+                            aria-label="Data & Privacy" title="Data & Privacy">
+                            <i class="fas fa-shield-alt me-3 text-success"></i>
+                            Data & Privacy
+                        </button>
+                        <hr class="my-2">
+                        <button type="button"
+                            class="list-group-item list-group-item-action d-flex align-items-center text-danger"
+                            ng-click="vm.logout()" aria-label="Logout" title="Logout">
+                            <i class="fas fa-sign-out-alt me-3"></i>
+                            Logout
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-md-9">
+            <!-- Error/Success Alerts -->
+            <div ng-if="vm.error" class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                {{vm.error}}
+                <button type="button" class="btn-close" ng-click="vm.error = ''" title="Close error message"></button>
+            </div>
+
+            <div ng-if="vm.success" class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="fas fa-check-circle me-2"></i>
+                {{vm.success}}
+                <button type="button" class="btn-close" ng-click="vm.success = ''"
+                    title="Close success message"></button>
+            </div>
+
+            <!-- Profile Information Tab -->
+            <div ng-if="vm.activeTab === 'profile'" class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-user me-2"></i>
+                        Profile Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form ng-submit="vm.updateProfile()">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="fullName" class="form-label">Full Name *</label>
+                                <input type="text" class="form-control" id="fullName" ng-model="vm.profileForm.name"
+                                    placeholder="Enter your full name" required ng-disabled="vm.loading">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="experienceLevel" class="form-label">Experience Level</label>
+                                <select class="form-select" id="experienceLevel"
+                                    ng-model="vm.profileForm.experience_level" ng-disabled="vm.loading"
+                                    aria-label="Select experience level">
+                                    <option value="">Select experience level...</option>
+                                    <option ng-repeat="level in vm.experienceLevels" value="{{level.value}}">
+                                        {{level.label}}
+                                    </option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="email" class="form-label">Email Address</label>
+                                <input type="email" class="form-control" id="email" ng-model="vm.profileForm.email"
+                                    placeholder="Enter your email" required ng-disabled="vm.loading">
+                                <div class="form-text">Email cannot be changed. Contact support if needed.</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="userRole" class="form-label">Role</label>
+                                <input id="userRole" type="text" class="form-control"
+                                    value="{{vm.user.role || 'ADMIN'}}" disabled aria-label="User role (read-only)">
+                                <div class="form-text">Role cannot be changed after registration.</div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Target Roles</label>
+                            <div class="row">
+                                <div class="col-md-4 col-sm-6" ng-repeat="role in vm.availableRoles">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="role_{{$index}}"
+                                            ng-checked="vm.profileForm.target_roles.indexOf(role) > -1"
+                                            ng-click="vm.toggleTargetRole(role)" ng-disabled="vm.loading">
+                                        <label class="form-check-label" for="role_{{$index}}">
+                                            {{role}}
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="text-end">
+                            <button type="submit" class="btn btn-primary" ng-disabled="vm.loading">
+                                <span ng-if="vm.loading">
+                                    <i class="fas fa-spinner fa-spin me-2"></i>
+                                    Saving...
+                                </span>
+                                <span ng-if="!vm.loading">
+                                    <i class="fas fa-save me-2"></i>
+                                    Save Changes
+                                </span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Change Password Tab -->
+            <div ng-if="vm.activeTab === 'password'" class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-lock me-2"></i>
+                        Change Password
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form ng-submit="vm.changePassword()">
+                        <div class="mb-3">
+                            <label for="currentPassword" class="form-label">Current Password *</label>
+                            <input type="password" class="form-control" id="currentPassword"
+                                ng-model="vm.passwordForm.current_password" placeholder="Enter your current password"
+                                required ng-disabled="vm.loading">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="newPassword" class="form-label">New Password *</label>
+                            <input type="password" class="form-control" id="newPassword"
+                                ng-model="vm.passwordForm.new_password" placeholder="Enter your new password" required
+                                ng-disabled="vm.loading">
+                            <div class="form-text">
+                                Password must be at least 8 characters long with uppercase, lowercase, and number.
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="confirmPassword" class="form-label">Confirm New Password *</label>
+                            <input type="password" class="form-control" id="confirmPassword"
+                                ng-model="vm.passwordForm.confirm_password" placeholder="Confirm your new password"
+                                required ng-disabled="vm.loading">
+                        </div>
+
+                        <div class="text-end">
+                            <button type="submit" class="btn btn-warning" ng-disabled="vm.loading">
+                                <span ng-if="vm.loading">
+                                    <i class="fas fa-spinner fa-spin me-2"></i>
+                                    Changing...
+                                </span>
+                                <span ng-if="!vm.loading">
+                                    <i class="fas fa-key me-2"></i>
+                                    Change Password
+                                </span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Settings Tab -->
+            <div ng-if="vm.activeTab === 'settings'" class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-cog me-2"></i>
+                        Settings
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Notification Preferences</h6>
+                            <div class="form-check form-switch mb-2">
+                                <input class="form-check-input" type="checkbox" id="emailNotifications" checked>
+                                <label class="form-check-label" for="emailNotifications">
+                                    Email Notifications
+                                </label>
+                            </div>
+                            <div class="form-check form-switch mb-2">
+                                <input class="form-check-input" type="checkbox" id="practiceReminders" checked>
+                                <label class="form-check-label" for="practiceReminders">
+                                    Practice Reminders
+                                </label>
+                            </div>
+                            <div class="form-check form-switch mb-3">
+                                <input class="form-check-input" type="checkbox" id="progressUpdates" checked>
+                                <label class="form-check-label" for="progressUpdates">
+                                    Progress Updates
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Privacy Settings</h6>
+                            <div class="form-check form-switch mb-2">
+                                <input class="form-check-input" type="checkbox" id="shareProgress">
+                                <label class="form-check-label" for="shareProgress">
+                                    Share Progress with Coaches
+                                </label>
+                            </div>
+                            <div class="form-check form-switch mb-2">
+                                <input class="form-check-input" type="checkbox" id="analyticsData" checked>
+                                <label class="form-check-label" for="analyticsData">
+                                    Allow Analytics Data Collection
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="text-end mt-3">
+                        <button type="button" class="btn btn-info">
+                            <i class="fas fa-save me-2"></i>
+                            Save Settings
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Data & Privacy Tab -->
+            <div ng-if="vm.activeTab === 'privacy'" class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-shield-alt me-2"></i>
+                        Data & Privacy
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <h6>Data Management</h6>
+                    <p class="text-muted">Manage your personal data and privacy settings.</p>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <div class="card bg-light border-primary">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-download fa-2x text-primary mb-2"></i>
+                                    <h6 class="card-title">Export Your Data</h6>
+                                    <p class="small text-muted mb-3">
+                                        Download a complete copy of your personal data including profile, 
+                                        interview history, and progress analytics in JSON format.
+                                    </p>
+                                    <button type="button" class="btn btn-outline-primary" 
+                                            ng-click="vm.exportData()" ng-disabled="vm.loading"
+                                            title="Export all your data for backup or transfer">
+                                        <span ng-if="vm.loading">
+                                            <i class="fas fa-spinner fa-spin me-1"></i>
+                                            Exporting...
+                                        </span>
+                                        <span ng-if="!vm.loading">
+                                            <i class="fas fa-download me-1"></i>
+                                            Export Data
+                                        </span>
+                                    </button>
+                                    <div class="small text-muted mt-2">
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        GDPR compliant data export
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="card bg-light border-danger">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-exclamation-triangle fa-2x text-danger mb-2"></i>
+                                    <h6 class="card-title text-danger">Delete Account</h6>
+                                    <p class="small text-muted mb-3">
+                                        Permanently delete your account and all associated data. 
+                                        This action cannot be undone and will remove all your progress.
+                                    </p>
+                                    <button type="button" class="btn btn-outline-danger" 
+                                            ng-click="vm.deleteAccount()" ng-disabled="vm.loading"
+                                            title="Permanently delete your account and all data">
+                                        <span ng-if="vm.loading">
+                                            <i class="fas fa-spinner fa-spin me-1"></i>
+                                            Processing...
+                                        </span>
+                                        <span ng-if="!vm.loading">
+                                            <i class="fas fa-trash me-1"></i>
+                                            Delete Account
+                                        </span>
+                                    </button>
+                                    <div class="small text-danger mt-2">
+                                        <i class="fas fa-exclamation-triangle me-1"></i>
+                                        This action is irreversible
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <h6>Privacy Policy</h6>
+                    <p class="text-muted">
+                        We respect your privacy and are committed to protecting your personal data.
+                        <a href="#" class="text-decoration-none">Read our full Privacy Policy</a>.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
