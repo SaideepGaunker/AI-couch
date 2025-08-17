@@ -56,7 +56,16 @@
             ApiService.get('/interviews/statistics')
                 .then(function(response) {
                     if (response) {
-                        vm.stats = angular.extend(vm.stats, response);
+                        // Map backend response to frontend stats structure
+                        vm.stats.total_sessions = response.total_sessions || 0;
+                        vm.stats.total_time = response.practice_hours || 0; // Map practice_hours to total_time
+                        vm.stats.avg_score = response.avg_score || 0;
+                        vm.stats.improvement = response.improvement_rate || 0; // Map improvement_rate to improvement
+                        vm.stats.sessions_this_week = response.sessions_this_week || 0;
+                        vm.stats.streak = response.streak || 0;
+                        
+                        console.log('Dashboard stats loaded:', vm.stats);
+                        console.log('Backend response:', response);
                     }
                 })
                 .catch(function(error) {

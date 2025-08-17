@@ -8,9 +8,9 @@
         .module('interviewPrepApp')
         .controller('InterviewController', InterviewController);
 
-    InterviewController.$inject = ['$location', '$timeout', '$interval', 'AuthService', 'InterviewService'];
+    InterviewController.$inject = ['$location', '$timeout', '$interval', '$scope', 'AuthService', 'InterviewService', 'PostureService'];
 
-    function InterviewController($location, $timeout, $interval, AuthService, InterviewService) {
+    function InterviewController($location, $timeout, $interval, $scope, AuthService, InterviewService, PostureService) {
         var vm = this;
 
         // Properties
@@ -50,6 +50,12 @@
 
         // Feedback properties
         vm.realTimeFeedback = null;
+        
+        // Posture detection properties
+        vm.postureEnabled = false;
+        vm.postureFeedback = null;
+        vm.showPostureFeedback = false;
+        vm.postureAnalysisActive = false;
 
         // Methods
         vm.startInterview = startInterview;
@@ -68,6 +74,12 @@
         vm.toggleRecording = toggleRecording;
         vm.formatTime = formatTime;
         vm.debugSession = debugSession;
+        // Posture detection methods
+        vm.togglePostureDetection = togglePostureDetection;
+        vm.startPostureAnalysis = startPostureAnalysis;
+        vm.stopPostureAnalysis = stopPostureAnalysis;
+        vm.initializePostureDetection = initializePostureDetection;
+        vm.triggerManualPostureAnalysis = triggerManualPostureAnalysis;
 
         // Debug function
         function debugSession() {
@@ -152,6 +164,17 @@
 
                         startTimers();
                         startCamera(); // Auto-start camera for interview
+                        
+                        // Initialize posture detection (optional)
+                        initializePostureDetection();
+                        
+                        // Auto-enable posture detection after a short delay
+                        $timeout(function() {
+                            if (vm.cameraActive && vm.session && vm.session.id) {
+                                console.log('Auto-enabling posture detection...');
+                                startPostureAnalysis();
+                            }
+                        }, 2000); // Wait 2 seconds for camera to be fully ready
                     } else {
                         // Create a sample question if none received
                         console.warn('No questions received, creating sample question');
@@ -229,6 +252,15 @@
 
                         startTimers();
                         startCamera();
+                        
+                        // Initialize and auto-enable posture detection for test
+                        initializePostureDetection();
+                        $timeout(function() {
+                            if (vm.cameraActive && vm.session && vm.session.id) {
+                                console.log('Auto-enabling posture detection for test...');
+                                startPostureAnalysis();
+                            }
+                        }, 2000);
                     } else {
                         // Create sample test questions if none received
                         console.warn('No test questions received, creating sample questions');
@@ -476,6 +508,12 @@
                                 videoElement.play().catch(function (e) {
                                     console.error('Error playing video:', e);
                                 });
+                                
+                                // Initialize posture detection after video is ready
+                                if (vm.session && vm.session.id) {
+                                    console.log('Video ready, initializing posture detection...');
+                                    initializePostureDetection();
+                                }
                             };
                         } else {
                             console.error('Video element not found!');
@@ -603,11 +641,132 @@
             }
         }
 
+        // Posture detection functions
+        function initializePostureDetection() {
+            if (!PostureService) {
+                console.warn('PostureService not available');
+                return;
+            }
+            
+            console.log('Initializing posture detection service...');
+            
+            // Set up posture feedback callback
+            PostureService.onPostureFeedback = function(feedback) {
+                console.log('Received posture feedback:', feedback);
+                
+                // Use $timeout to safely update the scope without digest cycle conflicts
+                $timeout(function() {
+                    vm.postureFeedback = feedback;
+                    vm.showPostureFeedback = true;
+                    
+                    // Auto-hide feedback after 5 seconds if status is good
+                    if (feedback.posture_status === 'good') {
+                        $timeout(function() {
+                            vm.showPostureFeedback = false;
+                        }, 5000);
+                    }
+                }, 0);
+            };
+            
+            PostureService.onError = function(error) {
+                console.error('Posture detection error:', error);
+                
+                // Use $timeout to safely update the scope without digest cycle conflicts
+                $timeout(function() {
+                    vm.postureFeedback = null;
+                    vm.showPostureFeedback = false;
+                }, 0);
+            };
+            
+            console.log('Posture detection service initialized successfully');
+        }
+        
+        function togglePostureDetection() {
+            if (!vm.cameraActive) {
+                vm.error = 'Please enable camera first';
+                return;
+            }
+            
+            if (vm.postureEnabled) {
+                stopPostureAnalysis();
+            } else {
+                startPostureAnalysis();
+            }
+        }
+        
+        function startPostureAnalysis() {
+            if (!PostureService || !vm.cameraActive) {
+                console.warn('Cannot start posture analysis - service or camera not available');
+                return;
+            }
+            
+            var videoElement = document.getElementById('userVideo');
+            if (!videoElement) {
+                console.error('Video element not found for posture analysis');
+                vm.error = 'Video element not found for posture analysis';
+                return;
+            }
+            
+            try {
+                console.log('Starting posture analysis with video element:', videoElement);
+                PostureService.startPostureAnalysis(videoElement, vm.session.id, 5000); // Analyze every 5 seconds
+                vm.postureEnabled = true;
+                vm.postureAnalysisActive = true;
+                vm.showPostureFeedback = true;
+                console.log('Posture analysis started successfully');
+            } catch (error) {
+                console.error('Error starting posture analysis:', error);
+                vm.error = 'Failed to start posture detection: ' + error.message;
+            }
+        }
+        
+        function stopPostureAnalysis() {
+            if (PostureService) {
+                PostureService.stopPostureAnalysis();
+                vm.postureEnabled = false;
+                vm.postureAnalysisActive = false;
+                vm.showPostureFeedback = false;
+                vm.postureFeedback = null;
+                console.log('Posture analysis stopped');
+            }
+        }
+
+        function triggerManualPostureAnalysis() {
+            if (!vm.cameraActive) {
+                vm.error = 'Please enable camera first to trigger manual posture analysis.';
+                return;
+            }
+            if (!PostureService) {
+                vm.error = 'PostureService not available.';
+                return;
+            }
+
+            var videoElement = document.getElementById('userVideo');
+            if (!videoElement) {
+                vm.error = 'Video element not found for manual posture analysis.';
+                return;
+            }
+
+            try {
+                console.log('Triggering manual posture analysis...');
+                PostureService.startPostureAnalysis(videoElement, vm.session.id, 5000); // Analyze every 5 seconds
+                vm.postureEnabled = true;
+                vm.postureAnalysisActive = true;
+                vm.showPostureFeedback = true;
+                console.log('Manual posture analysis triggered successfully.');
+            } catch (error) {
+                console.error('Error triggering manual posture analysis:', error);
+                vm.error = 'Failed to trigger manual posture analysis: ' + error.message;
+            }
+        }
+
         // Cleanup on destroy - AngularJS component lifecycle hook
         this.$onDestroy = function () {
             stopTimers();
             stopCamera();
             stopRecording();
+            // Posture detection cleanup
+            stopPostureAnalysis();
         };
     }
 })();

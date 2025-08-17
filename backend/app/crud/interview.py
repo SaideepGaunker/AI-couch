@@ -107,6 +107,13 @@ def create_performance_metric(
     improvement_suggestions: List[str] = None
 ) -> PerformanceMetrics:
     """Create performance metric for a question answer"""
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    logger.info(f"=== CRUD DEBUG ===")
+    logger.info(f"Creating performance metric with body_language_score: {body_language_score}")
+    logger.info(f"All parameters: session_id={session_id}, question_id={question_id}, body_language_score={body_language_score}")
+    
     metric = PerformanceMetrics(
         session_id=session_id,
         question_id=question_id,
@@ -117,9 +124,34 @@ def create_performance_metric(
         tone_confidence_score=tone_confidence_score,
         improvement_suggestions=improvement_suggestions or []
     )
+    
+    logger.info(f"Metric object created: {metric}")
+    logger.info(f"Metric body_language_score before add: {metric.body_language_score}")
+    
+    logger.info(f"Adding metric to database session...")
     db.add(metric)
-    db.commit()
+    
+    # Check if the metric is in the session
+    logger.info(f"Metric in session before commit: {metric in db}")
+    
+    try:
+        logger.info(f"Committing to database...")
+        db.commit()
+        logger.info(f"Database commit successful")
+    except Exception as e:
+        logger.error(f"Database commit failed: {str(e)}")
+        db.rollback()
+        raise
+    
+    # Check if the metric is still in the session after commit
+    logger.info(f"Metric in session after commit: {metric in db}")
+    
+    logger.info(f"Refreshing metric from database...")
     db.refresh(metric)
+    
+    logger.info(f"Metric body_language_score after commit: {metric.body_language_score}")
+    logger.info(f"=== END CRUD DEBUG ===")
+    
     return metric
 
 

@@ -1,0 +1,126 @@
+<!-- Posture Feedback Template -->
+<div ng-if="vm.isVisible && vm.feedback" class="posture-feedback-container">
+    <!-- Compact View (for during interview) -->
+    <div ng-if="vm.compact" class="posture-feedback-compact">
+        <div class="d-flex align-items-center">
+            <div class="posture-indicator me-2">
+                <i class="{{vm.getStatusIcon(vm.feedback.posture_status)}} text-{{vm.getStatusColor(vm.feedback.posture_status)}}"></i>
+            </div>
+            <div class="posture-score">
+                <span class="badge bg-{{vm.getScoreColor(vm.feedback.posture_score)}}">
+                    {{vm.formatScore(vm.feedback.posture_score)}}
+                </span>
+            </div>
+        </div>
+        <div class="posture-message mt-1">
+            <small class="text-muted">{{vm.feedback.feedback_message}}</small>
+        </div>
+    </div>
+
+    <!-- Full View (for detailed feedback) -->
+    <div ng-if="!vm.compact" class="posture-feedback-full">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-light py-2">
+                <div class="d-flex align-items-center justify-content-between">
+                    <h6 class="mb-0">
+                        <i class="fas fa-user-check me-2"></i>
+                        Posture Analysis
+                    </h6>
+                    <span class="badge bg-{{vm.getScoreColor(vm.feedback.posture_score)}} fs-6">
+                        {{vm.formatScore(vm.feedback.posture_score)}}/100
+                    </span>
+                </div>
+            </div>
+            
+            <div class="card-body p-3">
+                <!-- Overall Status -->
+                <div class="d-flex align-items-center mb-3">
+                    <div class="status-icon me-3">
+                        <i class="{{vm.getStatusIcon(vm.feedback.posture_status)}} fa-2x text-{{vm.getStatusColor(vm.feedback.posture_status)}}"></i>
+                    </div>
+                    <div>
+                        <h6 class="mb-1 text-{{vm.getStatusColor(vm.feedback.posture_status)}}">
+                            {{vm.feedback.posture_status === 'good' ? 'Excellent Posture' : 
+                              vm.feedback.posture_status === 'needs_improvement' ? 'Needs Improvement' : 
+                              vm.feedback.posture_status === 'bad' ? 'Poor Posture' : 'No Pose Detected'}}
+                        </h6>
+                        <p class="mb-0 text-muted small">{{vm.feedback.feedback_message}}</p>
+                    </div>
+                </div>
+
+                <!-- Detailed Breakdown (if available) -->
+                <div ng-if="vm.feedback.details" class="posture-details">
+                    <h6 class="mb-2">Detailed Analysis:</h6>
+                    
+                    <!-- Head Tilt -->
+                    <div class="detail-item mb-2">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="small">Head Position</span>
+                            <span class="badge bg-{{vm.getScoreColor(vm.feedback.details.head_tilt.score)}} small">
+                                {{vm.formatScore(vm.feedback.details.head_tilt.score)}}
+                            </span>
+                        </div>
+                        <div class="progress mt-1" style="height: 4px;">
+                            <div class="progress-bar bg-{{vm.getScoreColor(vm.feedback.details.head_tilt.score)}}" 
+                                 style="width: {{vm.feedback.details.head_tilt.score}}%"></div>
+                        </div>
+                    </div>
+
+                    <!-- Back Straightness -->
+                    <div class="detail-item mb-2">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="small">Back Straightness</span>
+                            <span class="badge bg-{{vm.getScoreColor(vm.feedback.details.back_straightness.score)}} small">
+                                {{vm.formatScore(vm.feedback.details.back_straightness.score)}}
+                            </span>
+                        </div>
+                        <div class="progress mt-1" style="height: 4px;">
+                            <div class="progress-bar bg-{{vm.getScoreColor(vm.feedback.details.back_straightness.score)}}" 
+                                 style="width: {{vm.feedback.details.back_straightness.score}}%"></div>
+                        </div>
+                    </div>
+
+                    <!-- Shoulder Alignment -->
+                    <div class="detail-item mb-2">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="small">Shoulder Alignment</span>
+                            <span class="badge bg-{{vm.getScoreColor(vm.feedback.details.shoulder_alignment.score)}} small">
+                                {{vm.formatScore(vm.feedback.details.shoulder_alignment.score)}}
+                            </span>
+                        </div>
+                        <div class="progress mt-1" style="height: 4px;">
+                            <div class="progress-bar bg-{{vm.getScoreColor(vm.feedback.details.shoulder_alignment.score)}}" 
+                                 style="width: {{vm.feedback.details.shoulder_alignment.score}}%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Timestamp -->
+                <div class="text-end mt-2">
+                    <small class="text-muted">
+                        <i class="fas fa-clock me-1"></i>
+                        {{vm.feedback.timestamp | date:'HH:mm:ss'}}
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- No Feedback State -->
+<div ng-if="vm.isVisible && !vm.feedback" class="posture-feedback-placeholder">
+    <div ng-if="vm.compact" class="text-center">
+        <small class="text-muted">
+            <i class="fas fa-user-check me-1"></i>
+            Analyzing posture...
+        </small>
+    </div>
+    
+    <div ng-if="!vm.compact" class="card border-0 shadow-sm">
+        <div class="card-body text-center py-4">
+            <i class="fas fa-user-check fa-2x text-muted mb-2"></i>
+            <p class="text-muted mb-0">Posture analysis will appear here</p>
+            <small class="text-muted">Make sure you're visible in the camera</small>
+        </div>
+    </div>
+</div>

@@ -64,11 +64,11 @@
             var targetPath = next.originalPath;
             var isAuthenticated = AuthService.isAuthenticated();
             
-            console.log('Route change start:', {
-                from: current ? current.originalPath : 'none',
-                to: targetPath,
-                authenticated: isAuthenticated
-            });
+            // console.log('Route change start:', {
+            //     from: current ? current.originalPath : 'none',
+            //     to: targetPath,
+            //     authenticated: isAuthenticated
+            // });
             
             // Check if route requires authentication
             var protectedRoutes = ['/dashboard', '/interview', '/interview-chat', '/test', '/progress', '/profile', '/feedback'];
@@ -98,11 +98,12 @@
         // Handle successful route changes
         $rootScope.$on('$routeChangeSuccess', function(event, current, previous) {
             if (current && current.originalPath) {
-                console.log('Route change successful:', {
-                    from: previous ? previous.originalPath : 'none',
-                    to: current.originalPath,
-                    authenticated: AuthService.isAuthenticated()
-                });
+                // Route change successful - no need to log auth status every time
+                // console.log('Route change successful:', {
+                //     from: previous ? previous.originalPath : 'none',
+                //     to: current.originalPath,
+                //     authenticated: AuthService.isAuthenticated()
+                // });
             }
         });
         

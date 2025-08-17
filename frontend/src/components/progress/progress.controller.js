@@ -32,6 +32,7 @@
         vm.loadTrends = loadTrends;
         vm.exportProgress = exportProgress;
         vm.viewSessionDetails = viewSessionDetails;
+        vm.refreshProgress = refreshProgress;
         
         // Initialize
         activate();
@@ -64,17 +65,43 @@
                 .then(function(response) {
                     vm.progressData = response || {};
                     
+                    console.log('Backend response:', response);
+                    console.log('Skill breakdown:', response.skill_breakdown);
+                    
                     // Map the response to expected format
                     vm.progressData.overall_score = vm.progressData.avg_score || 0;
                     vm.progressData.sessions_completed = vm.progressData.total_sessions || 0;
                     vm.progressData.improvement_rate = vm.progressData.improvement_rate || 0;
                     
-                    // Ensure skill_breakdown exists
-                    vm.progressData.skill_breakdown = vm.progressData.skill_breakdown || {
-                        content_quality: 0,
-                        body_language: 0,
-                        voice_tone: 0
-                    };
+                    // Ensure skill_breakdown exists and map correctly from backend
+                    if (vm.progressData.skill_breakdown) {
+                        // Map backend field names to frontend expectations
+                        vm.progressData.skill_breakdown.content_quality = vm.progressData.skill_breakdown.content_quality || 0;
+                        vm.progressData.skill_breakdown.body_language = vm.progressData.skill_breakdown.body_language || 0;
+                        // Map backend's 'tone_confidence' to frontend's 'voice_tone'
+                        vm.progressData.skill_breakdown.voice_tone = vm.progressData.skill_breakdown.tone_confidence || 0;
+                        
+                        console.log('Mapped body language:', vm.progressData.skill_breakdown.body_language);
+                    } else {
+                        // Fallback if skill_breakdown is missing
+                        vm.progressData.skill_breakdown = {
+                            content_quality: 0,
+                            body_language: 0,
+                            voice_tone: 0
+                        };
+                        console.log('No skill breakdown in response, using defaults');
+                    }
+                    
+                    // Validate skill breakdown data
+                    if (vm.progressData.skill_breakdown.body_language === null || vm.progressData.skill_breakdown.body_language === undefined) {
+                        vm.progressData.skill_breakdown.body_language = 0;
+                    }
+                    if (vm.progressData.skill_breakdown.content_quality === null || vm.progressData.skill_breakdown.content_quality === undefined) {
+                        vm.progressData.skill_breakdown.content_quality = 0;
+                    }
+                    if (vm.progressData.skill_breakdown.voice_tone === null || vm.progressData.skill_breakdown.voice_tone === undefined) {
+                        vm.progressData.skill_breakdown.voice_tone = 0;
+                    }
                     
                     // Ensure recommendations exist
                     vm.progressData.recommendations = vm.progressData.recommendations || [
@@ -91,6 +118,10 @@
                     };
                     
                     console.log('Progress data loaded:', vm.progressData);
+                    console.log('Skill breakdown (AVERAGE scores across all sessions):', vm.progressData.skill_breakdown);
+                    console.log('Average body language score:', vm.progressData.skill_breakdown.body_language);
+                    console.log('Average content quality score:', vm.progressData.skill_breakdown.content_quality);
+                    console.log('Average voice tone score:', vm.progressData.skill_breakdown.voice_tone);
                     
                     // Load recent sessions
                     loadRecentSessions();
@@ -104,7 +135,7 @@
                         skill_breakdown: {
                             content_quality: 0,
                             body_language: 0,
-                            tone_confidence: 0
+                            voice_tone: 0
                         }
                     };
                     console.log('Progress data not available, using defaults:', error);
@@ -199,6 +230,10 @@
             $location.path('/session/' + sessionId);
         }
         
+        function refreshProgress() {
+            loadProgressData();
+        }
+        
         // Helper methods
         vm.getScoreColor = function(score) {
             if (score >= 80) return 'success';
@@ -210,6 +245,31 @@
             if (score >= 80) return 'fas fa-star';
             if (score >= 60) return 'fas fa-thumbs-up';
             return 'fas fa-arrow-up';
+        };
+        
+        // Check if skill breakdown data is available
+        vm.hasSkillBreakdown = function() {
+            return vm.progressData && 
+                   vm.progressData.skill_breakdown && 
+                   (vm.progressData.skill_breakdown.content_quality > 0 || 
+                    vm.progressData.skill_breakdown.body_language > 0 || 
+                    vm.progressData.skill_breakdown.voice_tone > 0);
+        };
+        
+        // Get skill breakdown data with fallbacks
+        vm.getSkillBreakdown = function() {
+            if (!vm.progressData || !vm.progressData.skill_breakdown) {
+                return {
+                    content_quality: 0,
+                    body_language: 0,
+                    voice_tone: 0
+                };
+            }
+            return {
+                content_quality: vm.progressData.skill_breakdown.content_quality || 0,
+                body_language: vm.progressData.skill_breakdown.body_language || 0,
+                voice_tone: vm.progressData.skill_breakdown.voice_tone || 0
+            };
         };
         
         vm.formatDate = function(dateString) {

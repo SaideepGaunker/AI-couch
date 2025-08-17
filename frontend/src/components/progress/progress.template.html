@@ -124,22 +124,23 @@
                             <h5 class="mb-0">
                                 <i class="fas fa-chart-bar me-2"></i>
                                 Skill Breakdown
+                                <small class="text-muted ms-2">(Average scores across all sessions)</small>
                             </h5>
                         </div>
                         <div class="card-body">
-                            <div class="row">
+                            <div ng-if="vm.hasSkillBreakdown()" class="row">
                                 <div class="col-md-4 mb-3">
                                     <h6>Content Quality</h6>
                                     <div class="progress mb-2">
                                         <div class="progress-bar bg-primary progress-bar-content" 
-                                             ng-style="{'width': vm.progressData.skill_breakdown.content_quality + '%'}"></div>
+                                             ng-style="{'width': vm.getSkillBreakdown().content_quality + '%'}"></div>
                                     </div>
                                     <div class="d-flex justify-content-between">
-                                        <small>{{vm.progressData.skill_breakdown.content_quality}}/100</small>
-                                        <span class="badge" ng-class="'bg-' + vm.getScoreColor(vm.progressData.skill_breakdown.content_quality)">
-                                            <i class="{{vm.getScoreIcon(vm.progressData.skill_breakdown.content_quality)}} me-1"></i>
-                                            {{vm.progressData.skill_breakdown.content_quality >= 80 ? 'Excellent' : 
-                                              vm.progressData.skill_breakdown.content_quality >= 60 ? 'Good' : 'Needs Work'}}
+                                        <small>{{vm.getSkillBreakdown().content_quality}}/100</small>
+                                        <span class="badge" ng-class="'bg-' + vm.getScoreColor(vm.getSkillBreakdown().content_quality)">
+                                            <i class="{{vm.getScoreIcon(vm.getSkillBreakdown().content_quality)}} me-1"></i>
+                                            {{vm.getSkillBreakdown().content_quality >= 80 ? 'Excellent' : 
+                                              vm.getSkillBreakdown().content_quality >= 60 ? 'Good' : 'Needs Work'}}
                                         </span>
                                     </div>
                                 </div>
@@ -148,14 +149,14 @@
                                     <h6>Body Language</h6>
                                     <div class="progress mb-2">
                                         <div class="progress-bar bg-success progress-bar-body" 
-                                             ng-style="{'width': vm.progressData.skill_breakdown.body_language + '%'}"></div>
+                                             ng-style="{'width': vm.getSkillBreakdown().body_language + '%'}"></div>
                                     </div>
                                     <div class="d-flex justify-content-between">
-                                        <small>{{vm.progressData.skill_breakdown.body_language}}/100</small>
-                                        <span class="badge" ng-class="'bg-' + vm.getScoreColor(vm.progressData.skill_breakdown.body_language)">
-                                            <i class="{{vm.getScoreIcon(vm.progressData.skill_breakdown.body_language)}} me-1"></i>
-                                            {{vm.progressData.skill_breakdown.body_language >= 80 ? 'Excellent' : 
-                                              vm.progressData.skill_breakdown.body_language >= 60 ? 'Good' : 'Needs Work'}}
+                                        <small>{{vm.getSkillBreakdown().body_language}}/100</small>
+                                        <span class="badge" ng-class="'bg-' + vm.getScoreColor(vm.getSkillBreakdown().body_language)">
+                                            <i class="{{vm.getScoreIcon(vm.getSkillBreakdown().body_language)}} me-1"></i>
+                                            {{vm.getSkillBreakdown().body_language >= 80 ? 'Excellent' : 
+                                              vm.getSkillBreakdown().body_language >= 60 ? 'Good' : 'Needs Work'}}
                                         </span>
                                     </div>
                                 </div>
@@ -164,17 +165,24 @@
                                     <h6>Voice & Tone</h6>
                                     <div class="progress mb-2">
                                         <div class="progress-bar bg-info progress-bar-voice" 
-                                             ng-style="{'width': vm.progressData.skill_breakdown.tone_confidence + '%'}"></div>
+                                             ng-style="{'width': vm.getSkillBreakdown().voice_tone + '%'}"></div>
                                     </div>
                                     <div class="d-flex justify-content-between">
-                                        <small>{{vm.progressData.skill_breakdown.tone_confidence}}/100</small>
-                                        <span class="badge" ng-class="'bg-' + vm.getScoreColor(vm.progressData.skill_breakdown.tone_confidence)">
-                                            <i class="{{vm.getScoreIcon(vm.progressData.skill_breakdown.tone_confidence)}} me-1"></i>
-                                            {{vm.progressData.skill_breakdown.tone_confidence >= 80 ? 'Excellent' : 
-                                              vm.progressData.skill_breakdown.tone_confidence >= 60 ? 'Good' : 'Needs Work'}}
+                                        <small>{{vm.getSkillBreakdown().voice_tone}}/100</small>
+                                        <span class="badge" ng-class="'bg-' + vm.getScoreColor(vm.getSkillBreakdown().voice_tone)">
+                                            <i class="{{vm.getScoreIcon(vm.getSkillBreakdown().voice_tone)}} me-1"></i>
+                                            {{vm.getSkillBreakdown().voice_tone >= 80 ? 'Excellent' : 
+                                              vm.getSkillBreakdown().voice_tone >= 60 ? 'Good' : 'Needs Work'}}
                                         </span>
                                     </div>
                                 </div>
+                            </div>
+                            
+                            <!-- Fallback message when no skill breakdown data -->
+                            <div ng-if="!vm.hasSkillBreakdown()" class="text-center py-4">
+                                <i class="fas fa-chart-bar fa-2x text-muted mb-3"></i>
+                                <h6 class="text-muted mb-2">No skill breakdown data yet</h6>
+                                <p class="text-muted mb-0">Complete interview sessions to see your performance breakdown.</p>
                             </div>
                         </div>
                     </div>

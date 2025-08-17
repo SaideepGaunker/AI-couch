@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Session Types Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; }
+        .success { color: green; }
+        .error { color: red; }
+        .badge { padding: 4px 8px; border-radius: 4px; color: white; margin: 2px; }
+        .bg-success { background-color: #28a745; }
+        .bg-info { background-color: #17a2b8; }
+        .bg-warning { background-color: #ffc107; color: black; }
+        .bg-primary { background-color: #007bff; }
+    </style>
+</head>
+<body>
+    <h1>Frontend Session Types Test</h1>
+    
+    <div class="test-section">
+        <h2>1. Session Type Options Test</h2>
+        <p>Testing all session type dropdown options:</p>
+        
+        <label for="sessionType">Session Type:</label>
+        <select id="sessionType" onchange="testSessionType(this.value)">
+            <option value="">Select type...</option>
+            <option value="mixed">Mixed Interview</option>
+            <option value="behavioral">Behavioral Questions</option>
+            <option value="technical">Technical Questions</option>
+            <option value="hr">HR Questions</option>
+        </select>
+        
+        <div id="sessionTypeResult"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>2. Session Type Icons Test</h2>
+        <p>Testing session type icons:</p>
+        <div id="iconTest"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>3. Session Type Badges Test</h2>
+        <p>Testing session type badge styling:</p>
+        <div id="badgeTest"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>4. API Data Format Test</h2>
+        <p>Testing API request data format:</p>
+        <div id="apiTest"></div>
+    </div>
+
+    <script>
+        // Simulate the getSessionTypeIcon function
+        function getSessionTypeIcon(type) {
+            switch (type) {
+                case 'hr': return 'fas fa-users';
+                case 'behavioral': return 'fas fa-comments';
+                case 'technical': return 'fas fa-code';
+                case 'mixed': return 'fas fa-layer-group';
+                default: return 'fas fa-question-circle';
+            }
+        }
+        
+        // Simulate badge class function
+        function getBadgeClass(type) {
+            switch (type) {
+                case 'behavioral': return 'bg-success';
+                case 'technical': return 'bg-info';
+                case 'mixed': return 'bg-warning';
+                case 'hr': return 'bg-primary';
+                default: return 'bg-secondary';
+            }
+        }
+        
+        function testSessionType(type) {
+            const result = document.getElementById('sessionTypeResult');
+            if (type) {
+                result.innerHTML = `<span class="success">✓ Selected: ${type}</span>`;
+            } else {
+                result.innerHTML = '<span class="error">Please select a session type</span>';
+            }
+        }
+        
+        // Test all session types
+        function runAllTests() {
+            const sessionTypes = ['hr', 'behavioral', 'technical', 'mixed'];
+            
+            // Test icons
+            const iconTest = document.getElementById('iconTest');
+            let iconHtml = '';
+            sessionTypes.forEach(type => {
+                const icon = getSessionTypeIcon(type);
+                iconHtml += `<div><i class="${icon}"></i> ${type}: ${icon}</div>`;
+            });
+            iconTest.innerHTML = iconHtml;
+            
+            // Test badges
+            const badgeTest = document.getElementById('badgeTest');
+            let badgeHtml = '';
+            sessionTypes.forEach(type => {
+                const badgeClass = getBadgeClass(type);
+                badgeHtml += `<span class="badge ${badgeClass}">${type}</span>`;
+            });
+            badgeTest.innerHTML = badgeHtml;
+            
+            // Test API data format
+            const apiTest = document.getElementById('apiTest');
+            let apiHtml = '<h4>Sample API Request Data:</h4>';
+            sessionTypes.forEach(type => {
+                const sampleData = {
+                    target_role: 'Software Developer',
+                    session_type: type,
+                    difficulty: 'intermediate',
+                    duration: 30,
+                    question_count: 5,
+                    enable_video: true,
+                    enable_audio: true
+                };
+                apiHtml += `<div><strong>${type}:</strong><br><pre>${JSON.stringify(sampleData, null, 2)}</pre></div>`;
+            });
+            apiTest.innerHTML = apiHtml;
+        }
+        
+        // Run tests on page load
+        window.onload = runAllTests;
+    </script>
+</body>
+</html>

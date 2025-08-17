@@ -44,21 +44,48 @@
         <!-- Left Side - Webcam -->
         <div class="col-md-5">
             <div class="card shadow h-100">
-                <div class="card-header bg-dark text-white">
-                    <h6 class="mb-0">
-                        <i class="fas fa-video me-2"></i>
-                        Video Feed
-                    </h6>
-                </div>
                 <div class="card-body p-0 d-flex flex-column">
-                    <!-- Video Container -->
-                    <div class="flex-grow-1 position-relative bg-dark">
-                        <video id="interviewVideo" 
-                               class="w-100 h-100" 
-                               autoplay 
-                               muted 
-                               style="object-fit: cover;"
-                               ng-show="vm.cameraActive"></video>
+                                         <!-- Video Container -->
+                     <div class="flex-grow-1 position-relative bg-dark">
+                         <video id="interviewVideo" 
+                                class="w-100 h-100" 
+                                autoplay 
+                                muted 
+                                style="object-fit: cover;"
+                                ng-show="vm.cameraActive"></video>
+                         
+                         <!-- Body Gesture Score Display - Top Right Corner -->
+                         <div ng-if="vm.cameraActive && vm.postureEnabled && vm.postureFeedback" 
+                              class="position-absolute top-0 end-0 m-3">
+                             <div class="posture-rating-display">
+                                 <div class="posture-rating-badge" 
+                                      ng-class="{
+                                          'bg-success': vm.postureFeedback.posture_status === 'good',
+                                          'bg-warning': vm.postureFeedback.posture_status === 'needs_improvement',
+                                          'bg-danger': vm.postureFeedback.posture_status === 'bad',
+                                          'bg-secondary': vm.postureFeedback.posture_status === 'no_pose' || vm.postureFeedback.posture_status === 'error'
+                                      }">
+                                     <div class="posture-score">{{ vm.postureFeedback.posture_score || 0 }}/100</div>
+                                     <div class="posture-status">
+                                         <i class="fas" ng-class="{
+                                             'fa-thumbs-up': vm.postureFeedback.posture_status === 'good',
+                                             'fa-exclamation-triangle': vm.postureFeedback.posture_status === 'needs_improvement',
+                                             'fa-times-circle': vm.postureFeedback.posture_status === 'bad',
+                                             'fa-question-circle': vm.postureFeedback.posture_status === 'no_pose' || vm.postureFeedback.posture_status === 'error'
+                                         }"></i>
+                                         {{ vm.getPostureStatusText(vm.postureFeedback.posture_status) }}
+                                     </div>
+                                 </div>
+                             </div>
+                         </div>
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
                         
                         <!-- Camera Error State -->
                         <div ng-if="vm.cameraError" class="position-absolute top-50 start-50 translate-middle text-center text-white">
@@ -97,11 +124,21 @@
                                     <i class="fas fa-circle me-1"></i>
                                     {{vm.isRecording ? 'Recording' : 'Standby'}}
                                 </span>
+                                                                 <span class="badge" ng-class="vm.postureAnalysisActive ? 'bg-success' : (vm.postureEnabled ? 'bg-info' : 'bg-secondary')">
+                                     <i class="fas fa-user-check me-1"></i>
+                                     {{vm.postureAnalysisActive ? 'Analyzing' : (vm.postureEnabled ? 'Posture On' : 'Posture Off')}}
+                                 </span>
                             </div>
-                            <button class="btn btn-sm btn-outline-secondary" ng-click="vm.cameraActive ? vm.stopCamera() : vm.startCamera()">
-                                <i class="fas" ng-class="vm.cameraActive ? 'fa-stop' : 'fa-play'"></i>
-                                {{vm.cameraActive ? 'Stop' : 'Start'}}
-                            </button>
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-sm btn-outline-info" ng-click="vm.togglePostureDetection()" ng-disabled="!vm.cameraActive">
+                                    <i class="fas fa-user-check"></i>
+                                    {{vm.postureEnabled ? 'Disable' : 'Enable'}} Posture
+                                </button>
+                                <button class="btn btn-sm btn-outline-secondary" ng-click="vm.cameraActive ? vm.stopCamera() : vm.startCamera()">
+                                    <i class="fas" ng-class="vm.cameraActive ? 'fa-stop' : 'fa-play'"></i>
+                                    {{vm.cameraActive ? 'Stop' : 'Start'}}
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -250,5 +287,53 @@
     to {
         visibility: hidden;
     }
+}
+
+/* Posture Rating Display Styles */
+.posture-rating-display {
+    z-index: 1000;
+}
+
+.posture-rating-badge {
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 12px 16px;
+    border-radius: 12px;
+    text-align: center;
+    min-width: 120px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+}
+
+.posture-score {
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 4px;
+}
+
+.posture-status {
+    font-size: 12px;
+    opacity: 0.9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+}
+
+.posture-rating-badge.bg-success {
+    border-color: rgba(40, 167, 69, 0.6);
+}
+
+.posture-rating-badge.bg-warning {
+    border-color: rgba(255, 193, 7, 0.6);
+}
+
+.posture-rating-badge.bg-danger {
+    border-color: rgba(220, 53, 69, 0.6);
+}
+
+.posture-rating-badge.bg-secondary {
+    border-color: rgba(108, 117, 125, 0.6);
 }
 </style>

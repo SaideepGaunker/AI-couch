@@ -8,9 +8,9 @@
         .module('interviewPrepApp')
         .controller('InterviewChatController', InterviewChatController);
 
-    InterviewChatController.$inject = ['$location', '$routeParams', '$timeout', '$interval', 'AuthService', 'InterviewService'];
+    InterviewChatController.$inject = ['$location', '$routeParams', '$timeout', '$interval', '$scope', 'AuthService', 'InterviewService', 'PostureService'];
 
-    function InterviewChatController($location, $routeParams, $timeout, $interval, AuthService, InterviewService) {
+    function InterviewChatController($location, $routeParams, $timeout, $interval, $scope, AuthService, InterviewService, PostureService) {
         var vm = this;
 
         // Properties
@@ -37,6 +37,16 @@
         vm.cameraActive = false;
         vm.cameraError = '';
         
+        // Posture detection properties
+        vm.postureEnabled = false;
+        vm.postureFeedback = null;
+        vm.showPostureFeedback = false;
+        vm.postureAnalysisActive = false;
+        
+        // Posture data collection for feedback
+        vm.postureScores = [];
+        vm.averagePostureScore = 0;
+        
         // Timer properties
         vm.sessionTimeRemaining = 0;
         vm.questionTimeRemaining = 0;
@@ -57,6 +67,10 @@
         vm.startCamera = startCamera;
         vm.stopCamera = stopCamera;
         vm.formatTime = formatTime;
+        vm.togglePostureDetection = togglePostureDetection;
+        vm.startPostureAnalysis = startPostureAnalysis;
+        vm.stopPostureAnalysis = stopPostureAnalysis;
+        vm.getPostureStatusText = getPostureStatusText;
 
         // Initialize
         activate();
@@ -87,6 +101,9 @@
 
             // Initialize audio services and camera
             initializeAudioServices();
+            
+            // Initialize posture detection service
+            initializePostureDetection();
             
             // Start camera
             $timeout(function() {
@@ -309,14 +326,40 @@
                 response_time: Math.floor(responseTime)
             };
             
+            // Add posture analysis data if available
+            console.log('=== POSTURE DATA DEBUG ===');
+            console.log('postureEnabled:', vm.postureEnabled);
+            console.log('postureScores length:', vm.postureScores.length);
+            console.log('postureScores array:', vm.postureScores);
+            
+            if (vm.postureEnabled && vm.postureScores.length > 0) {
+                // Get the most recent posture score for this answer
+                var recentPostureScore = vm.postureScores[vm.postureScores.length - 1];
+                answerData.posture_data = {
+                    score: recentPostureScore.score,
+                    status: recentPostureScore.status
+                };
+                
+                console.log('Including posture data in answer submission:', answerData.posture_data);
+                console.log('Posture score type:', typeof recentPostureScore.score);
+                console.log('Posture score value:', recentPostureScore.score);
+            } else if (vm.postureEnabled && vm.postureFeedback) {
+                // Use current posture feedback if no scores collected yet
+                answerData.posture_data = {
+                    score: vm.postureFeedback.posture_score || 0,
+                    status: vm.postureFeedback.posture_status || 'unknown'
+                };
+                
+                console.log('Using current posture feedback:', answerData.posture_data);
+            } else {
+                console.log('No posture data available - postureEnabled:', vm.postureEnabled, 'postureScores length:', vm.postureScores.length);
+            }
+            console.log('=== END POSTURE DATA DEBUG ===');
+            
             console.log('Answer data being sent:', answerData);
-
-            console.log('Submitting answer:', answerData);
 
             InterviewService.submitAnswer(vm.sessionId, answerData)
                 .then(function(response) {
-                    console.log('Answer submitted successfully:', response);
-                    
                     // Show AI feedback
                     if (response.real_time_feedback) {
                         var feedbackMsg = 'Thank you for your answer!';
@@ -376,7 +419,6 @@
         }
 
         function endSession() {
-            console.log('Ending interview session');
             stopTimers();
             
             if (vm.mediaStream) {
@@ -386,9 +428,13 @@
             }
 
             if (vm.sessionId) {
-                InterviewService.completeSession(vm.sessionId)
+                // Prepare session completion data
+                var sessionData = {
+                    session_id: vm.sessionId
+                };
+                
+                InterviewService.completeSession(vm.sessionId, sessionData)
                     .then(function(response) {
-                        console.log('Session completed:', response);
                         $timeout(function() {
                             $location.path('/feedback/' + vm.sessionId);
                         }, 0);
@@ -500,6 +546,15 @@
                                 videoElement.play().catch(function(e) {
                                     console.error('Error playing interview video:', e);
                                 });
+                                
+                                // Automatically enable posture detection after camera is ready
+                                $timeout(function() {
+                                    if (!vm.postureEnabled) {
+                                        console.log('Automatically enabling posture detection...');
+                                        vm.postureEnabled = true;
+                                        startPostureAnalysis();
+                                    }
+                                }, 2000); // Wait 2 seconds for camera to stabilize
                             };
                         }
                     }, 100);
@@ -546,6 +601,164 @@
             return minutes + ':' + (remainingSeconds < 10 ? '0' : '') + remainingSeconds;
         }
 
+        function initializePostureDetection() {
+            if (!PostureService) {
+                console.warn('PostureService not available');
+                return;
+            }
+            
+            console.log('Initializing posture detection service for chat interview...');
+            
+            // Set up posture feedback callback
+            PostureService.onPostureFeedback = function(feedback) {
+                console.log('Received posture feedback in chat:', feedback);
+                
+                // Use $timeout to safely update the scope without digest cycle conflicts
+                $timeout(function() {
+                    vm.postureFeedback = feedback;
+                    vm.showPostureFeedback = true;
+                    
+                    // Store posture score for feedback system
+                    if (feedback.posture_score && feedback.posture_score > 0) {
+                        console.log('=== POSTURE SCORE COLLECTION DEBUG ===');
+                        console.log('Raw feedback received:', feedback);
+                        console.log('Posture score type:', typeof feedback.posture_score);
+                        console.log('Posture score value:', feedback.posture_score);
+                        
+                        vm.postureScores.push({
+                            score: feedback.posture_score,
+                            status: feedback.posture_status,
+                            timestamp: new Date().toISOString(),
+                            feedback_message: feedback.feedback_message || ''
+                        });
+                        
+                        // Calculate average posture score
+                        if (vm.postureScores.length > 0) {
+                            vm.averagePostureScore = Math.round(
+                                vm.postureScores.reduce((sum, item) => sum + item.score, 0) / vm.postureScores.length
+                            );
+                        }
+                        
+                        console.log('Updated posture scores array:', vm.postureScores);
+                        console.log('Current average posture score:', vm.averagePostureScore);
+                        console.log('Total scores collected:', vm.postureScores.length);
+                        console.log('========================================');
+                    } else if (feedback.score && feedback.score > 0) {
+                        // Alternative field name
+                        console.log('=== POSTURE SCORE COLLECTION DEBUG (alternative) ===');
+                        console.log('Using feedback.score:', feedback.score);
+                        
+                        vm.postureScores.push({
+                            score: feedback.score,
+                            status: feedback.status || feedback.posture_status || 'unknown',
+                            timestamp: new Date().toISOString(),
+                            feedback_message: feedback.feedback_message || ''
+                        });
+                        
+                        // Calculate average posture score
+                        if (vm.postureScores.length > 0) {
+                            vm.averagePostureScore = Math.round(
+                                vm.postureScores.reduce((sum, item) => sum + item.score, 0) / vm.postureScores.length
+                            );
+                        }
+                        
+                        console.log('Updated posture scores array:', vm.postureScores);
+                        console.log('Current average posture score:', vm.averagePostureScore);
+                        console.log('Total scores collected:', vm.postureScores.length);
+                        console.log('========================================');
+                    } else {
+                        console.log('Posture score not stored - invalid data:', feedback.posture_score || feedback.score);
+                        console.log('Full feedback object:', feedback);
+                    }
+                    
+                    // Auto-hide feedback after 5 seconds if status is good
+                    if (feedback.posture_status === 'good') {
+                        $timeout(function() {
+                            vm.showPostureFeedback = false;
+                        }, 5000);
+                    }
+                }, 0);
+            };
+            
+            PostureService.onError = function(error) {
+                console.error('Posture detection error in chat:', error);
+                
+                // Use $timeout to safely update the scope without digest cycle conflicts
+                $timeout(function() {
+                    vm.postureFeedback = null;
+                    vm.showPostureFeedback = false;
+                }, 0);
+            };
+            
+            console.log('Posture detection service initialized successfully for chat interview');
+        }
+
+        function togglePostureDetection() {
+            if (!vm.cameraActive) {
+                vm.error = 'Please enable camera first';
+                return;
+            }
+            
+            vm.postureEnabled = !vm.postureEnabled;
+            if (vm.postureEnabled) {
+                startPostureAnalysis();
+                console.log('Posture detection enabled');
+            } else {
+                stopPostureAnalysis();
+                console.log('Posture detection disabled');
+            }
+        }
+
+        function startPostureAnalysis() {
+            if (!PostureService || !vm.cameraActive || !vm.sessionId) {
+                console.warn('Cannot start posture analysis - service, camera, or session not available');
+                return;
+            }
+
+            var videoElement = document.getElementById('interviewVideo');
+            if (!videoElement) {
+                console.error('Video element not found for posture analysis');
+                vm.error = 'Video element not found for posture analysis';
+                return;
+            }
+
+            try {
+                console.log('Starting posture analysis...');
+                PostureService.startPostureAnalysis(videoElement, vm.sessionId, 3000); // Analyze every 3 seconds
+                vm.postureAnalysisActive = true;
+                console.log('Posture analysis started successfully');
+            } catch (error) {
+                console.error('Error starting posture analysis:', error);
+                vm.error = 'Failed to start posture detection: ' + error.message;
+            }
+        }
+
+        function stopPostureAnalysis() {
+            if (PostureService) {
+                PostureService.stopPostureAnalysis();
+                vm.postureAnalysisActive = false;
+                vm.postureFeedback = null;
+                console.log('Posture analysis stopped');
+            }
+        }
+
+        function getPostureStatusText(status) {
+            switch (status) {
+                case 'good':
+                    return 'Good Posture!';
+                case 'needs_improvement':
+                    return 'Needs Improvement';
+                case 'bad':
+                    return 'Poor Posture';
+                case 'no_pose':
+                    return 'No Pose Detected';
+                case 'error':
+                    return 'Analysis Error';
+                default:
+                    return 'Unknown Status';
+            }
+        }
+
         // Cleanup on destroy
         this.$onDestroy = function() {
             stopTimers();
@@ -553,6 +766,7 @@
             if (vm.recognition && vm.isListening) {
                 vm.recognition.stop();
             }
+            stopPostureAnalysis(); // Ensure posture analysis is stopped on destroy
         };
     }
 })();

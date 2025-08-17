@@ -81,7 +81,20 @@
         }
 
         function submitAnswer(sessionId, answerData) {
-            return ApiService.post('/interviews/' + sessionId + '/submit-answer', answerData)
+            // Ensure answerData is properly structured
+            var data = {
+                question_id: answerData.question_id,
+                answer_text: answerData.answer_text,
+                response_time: answerData.response_time
+            };
+            
+            // Include posture data if available
+            if (answerData.posture_data) {
+                data.posture_data = answerData.posture_data;
+                console.log('InterviewService: Including posture data in submission:', data.posture_data);
+            }
+            
+            return ApiService.post('/interviews/' + sessionId + '/submit-answer', data)
                 .then(function(response) {
                     return response;
                 });
@@ -101,8 +114,11 @@
                 });
         }
 
-        function completeSession(sessionId) {
-            return ApiService.put('/interviews/' + sessionId + '/complete')
+        function completeSession(sessionId, sessionData) {
+            var data = sessionData || {};
+            data.session_id = sessionId;
+            
+            return ApiService.put('/interviews/' + sessionId + '/complete', data)
                 .then(function(response) {
                     return response;
                 });
@@ -116,14 +132,19 @@
         }
 
         function getSessionFeedback(sessionId) {
+            console.log('InterviewService: Getting session feedback for session:', sessionId);
+            
             return ApiService.get('/interviews/' + sessionId + '/feedback')
                 .then(function(response) {
+                    console.log('InterviewService: Feedback response received:', response);
                     return response;
                 })
                 .catch(function(error) {
-                    console.error('Error getting session feedback:', error);
+                    console.error('InterviewService: Error getting session feedback:', error);
+                    console.error('Error details:', error.status, error.statusText, error.data);
+                    
                     // Return a default structure if the backend fails
-                    return {
+                    var fallbackResponse = {
                         feedback: {
                             overall_score: 0,
                             content_quality: 0,
@@ -138,6 +159,9 @@
                             session_type: 'mixed'
                         }
                     };
+                    
+                    console.log('InterviewService: Returning fallback response:', fallbackResponse);
+                    return fallbackResponse;
                 });
         }
 

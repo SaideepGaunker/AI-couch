@@ -312,7 +312,13 @@ class InterviewService:
         answer_data: AnswerSubmission
     ) -> Dict[str, Any]:
         """Submit answer for current question"""
+        logger.info(f"=== SUBMIT ANSWER DEBUG ===")
         logger.info(f"Submitting answer for session {session_id}, question {answer_data.question_id}")
+        logger.info(f"Answer data received: {answer_data}")
+        logger.info(f"Posture data type: {type(answer_data.posture_data)}")
+        logger.info(f"Posture data content: {answer_data.posture_data}")
+        logger.info(f"Posture data keys: {answer_data.posture_data.keys() if answer_data.posture_data else 'None'}")
+        logger.info(f"=== END SUBMIT ANSWER DEBUG ===")
         
         try:
             session = self.get_session_by_id(session_id, user_id)
@@ -384,7 +390,53 @@ class InterviewService:
                 }
             
             # Store performance metrics
+            logger.info(f"=== PERFORMANCE METRICS DEBUG ===")
             try:
+                # Calculate body language score from posture data if available
+                body_language_score = 0.0
+                logger.info(f"=== POSTURE PROCESSING DEBUG ===")
+                logger.info(f"Processing posture data for answer: {answer_data.posture_data}")
+                logger.info(f"Posture data type: {type(answer_data.posture_data)}")
+                logger.info(f"Posture data keys: {answer_data.posture_data.keys() if answer_data.posture_data else 'None'}")
+                
+                if hasattr(answer_data, 'posture_data') and answer_data.posture_data:
+                    logger.info(f"Posture data found: {answer_data.posture_data}")
+                    # First try to use the overall posture score if available
+                    if 'score' in answer_data.posture_data and answer_data.posture_data['score'] is not None:
+                        body_language_score = float(answer_data.posture_data['score'])
+                        logger.info(f"Using overall posture score: {body_language_score}")
+                    elif 'posture_score' in answer_data.posture_data and answer_data.posture_data['posture_score'] is not None:
+                        body_language_score = float(answer_data.posture_data['posture_score'])
+                        logger.info(f"Using posture_score: {body_language_score}")
+                    else:
+                        logger.info("No overall score found, checking individual scores")
+                        # Fallback to calculating average from individual posture scores
+                        posture_scores = []
+                        if 'head_tilt_score' in answer_data.posture_data:
+                            posture_scores.append(answer_data.posture_data['head_tilt_score'])
+                        if 'back_straightness_score' in answer_data.posture_data:
+                            posture_scores.append(answer_data.posture_data['back_straightness_score'])
+                        if 'shoulder_alignment_score' in answer_data.posture_data:
+                            posture_scores.append(answer_data.posture_data['shoulder_alignment_score'])
+                        
+                        if posture_scores:
+                            body_language_score = sum(posture_scores) / len(posture_scores)
+                            logger.info(f"Calculated average from individual scores: {body_language_score}")
+                else:
+                    logger.info("No posture data found in answer_data")
+                    # Use a default score based on content quality if no posture data
+                    if evaluation.get('overall_score', 0) > 0:
+                        body_language_score = min(85.0, evaluation.get('overall_score', 0) * 0.8)
+                        logger.info(f"Using fallback body_language_score based on content: {body_language_score}")
+                    else:
+                        body_language_score = 50.0  # Default score
+                        logger.info(f"Using default body_language_score: {body_language_score}")
+                
+                logger.info(f"Final body_language_score: {body_language_score}")
+                logger.info(f"=== END POSTURE PROCESSING DEBUG ===")
+                
+                logger.info(f"About to create performance metric with body_language_score: {body_language_score}")
+                
                 performance_metric = create_performance_metric(
                     self.db,
                     session_id=session_id,
@@ -392,11 +444,32 @@ class InterviewService:
                     answer_text=answer_data.answer_text,
                     response_time=answer_data.response_time,
                     content_quality_score=evaluation.get('overall_score', 0),
+                    body_language_score=body_language_score,
+                    tone_confidence_score=0.0,  # Will be calculated separately if needed
                     improvement_suggestions=evaluation.get('suggestions', [])
                 )
+                
+                logger.info(f"Performance metric created with body_language_score: {performance_metric.body_language_score}")
+                
+                # Verify the data was stored correctly by querying it back
+                from app.db.models import PerformanceMetrics
+                stored_metric = self.db.query(PerformanceMetrics).filter(
+                    PerformanceMetrics.id == performance_metric.id
+                ).first()
+                
+                if stored_metric:
+                    logger.info(f"Verified stored metric - body_language_score: {stored_metric.body_language_score}")
+                else:
+                    logger.error("Could not verify stored metric - it was not found in database")
+                    
+                logger.info(f"=== END PERFORMANCE METRICS DEBUG ===")
             except Exception as e:
                 logger.error(f"Error storing performance metrics: {str(e)}")
-                # Continue without storing metrics
+                logger.error(f"Exception details: {str(e)}")
+                import traceback
+                logger.error(f"Traceback: {traceback.format_exc()}")
+                # Continue without storing metrics, but log the issue
+                logger.error(f"Continuing without storing performance metrics due to error")
             
             # Update session state
             session_state["answers"][answer_data.question_id] = {
@@ -673,6 +746,13 @@ class InterviewService:
                 PerformanceMetrics.session_id == session_id
             ).all()
             
+            logger.info(f"=== FEEDBACK DEBUG ===")
+            logger.info(f"Found {len(metrics)} performance metrics for session {session_id}")
+            
+            # Debug each metric
+            for i, metric in enumerate(metrics):
+                logger.info(f"Metric {i+1}: question_id={metric.question_id}, body_language_score={metric.body_language_score}, content_score={metric.content_quality_score}")
+            
             # Get user information
             user = self.db.query(User).filter(User.id == user_id).first()
             
@@ -714,6 +794,9 @@ class InterviewService:
             avg_body_language = sum(q['body_language_score'] for q in questions_data) / len(questions_data)
             avg_tone = sum(q['tone_score'] for q in questions_data) / len(questions_data)
             overall_score = (avg_content + avg_body_language + avg_tone) / 3
+            
+            logger.info(f"Calculated scores: avg_content={avg_content}, avg_body_language={avg_body_language}, avg_tone={avg_tone}, overall_score={overall_score}")
+            logger.info(f"=== END FEEDBACK DEBUG ===")
             
             # Prepare data for AI analysis
             performance_data = {
@@ -843,8 +926,17 @@ class InterviewService:
                 
                 if all_metrics:
                     avg_content = sum(m.content_quality_score or 0 for m in all_metrics) / len(all_metrics)
+                    # Calculate body language from PerformanceMetrics table
                     avg_body_language = sum(m.body_language_score or 0 for m in all_metrics) / len(all_metrics)
                     avg_tone = sum(m.tone_confidence_score or 0 for m in all_metrics) / len(all_metrics)
+                    
+                    logger.info(f"=== USER STATISTICS DEBUG ===")
+                    logger.info(f"Total metrics analyzed: {len(all_metrics)}")
+                    logger.info(f"Average content quality: {avg_content}")
+                    logger.info(f"Average body language: {avg_body_language}")
+                    logger.info(f"Average tone confidence: {avg_tone}")
+                    logger.info(f"Calculated from {len(completed_sessions)} completed sessions")
+                    logger.info(f"=== END USER STATISTICS DEBUG ===")
                 else:
                     avg_content = avg_body_language = avg_tone = avg_score
             else:

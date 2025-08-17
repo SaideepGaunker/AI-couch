@@ -102,6 +102,7 @@ class AnswerSubmission(BaseModel):
     response_time: int  # in seconds
     audio_data: Optional[str] = None  # base64 encoded
     video_data: Optional[str] = None  # base64 encoded
+    posture_data: Optional[Dict[str, Any]] = None  # posture metrics (score, status, etc.)
 
 
 class AnswerSubmissionResponse(BaseModel):

@@ -158,8 +158,31 @@
                 </div>
                 <div class="card-body">
                     <!-- Camera/Video Area -->
-                    <div class="video-container mb-3">
+                    <div class="video-container mb-3 position-relative">
                         <video id="userVideo" class="w-100 video-element" autoplay muted></video>
+                        
+                        <!-- Posture feedback overlay -->
+                        <div ng-if="vm.cameraActive && vm.postureEnabled" class="position-absolute top-0 start-0 m-3">
+                            <div class="d-flex align-items-center">
+                                <span class="badge bg-success me-2">
+                                    <i class="fas fa-user-check me-1"></i>
+                                    Posture Analysis Active
+                                </span>
+                                <span ng-if="vm.postureAnalysisActive" class="badge bg-info">
+                                    <i class="fas fa-spinner fa-spin me-1"></i>
+                                    Analyzing...
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <!-- Posture feedback re-enabled -->
+                        <posture-feedback 
+                            ng-if="vm.cameraActive && vm.postureEnabled" 
+                            feedback="vm.postureFeedback" 
+                            compact="true" 
+                            is-visible="vm.showPostureFeedback">
+                        </posture-feedback>
+                        
                         <div ng-if="!vm.cameraActive" class="video-placeholder">
                             <div class="text-center">
                                 <i class="fas fa-camera fa-3x text-muted mb-3"></i>
@@ -177,6 +200,16 @@
                         <button type="button" class="btn btn-outline-primary" ng-click="vm.toggleCamera()" ng-disabled="vm.loading">
                             <i class="fas" ng-class="vm.cameraActive ? 'fa-video-slash' : 'fa-video'"></i>
                             {{vm.cameraActive ? 'Stop Camera' : 'Start Camera'}}
+                        </button>
+                        
+                        <!-- Posture toggle button re-enabled -->
+                        <button type="button" class="btn btn-outline-info" ng-click="vm.togglePostureDetection()" ng-disabled="vm.loading || !vm.cameraActive">
+                            <i class="fas fa-user-check"></i>
+                            {{vm.postureEnabled ? 'Disable Posture' : 'Enable Posture'}}
+                        </button>
+                        <button type="button" class="btn btn-outline-success" ng-click="vm.triggerManualPostureAnalysis()" ng-disabled="vm.loading || !vm.cameraActive">
+                            <i class="fas fa-play"></i>
+                            Manual Posture
                         </button>
                         <button type="button" class="btn btn-outline-secondary" ng-click="vm.toggleMicrophone()" ng-disabled="vm.loading">
                             <i class="fas" ng-class="vm.microphoneActive ? 'fa-microphone-slash' : 'fa-microphone'"></i>

@@ -104,12 +104,8 @@
             var token = localStorage.getItem('access_token');
             var user = localStorage.getItem('user');
             
-            console.log('Auth check - Token exists:', !!token);
-            console.log('Auth check - User exists:', !!user);
-            
             // Must have both token and user data
             if (!token || !user) {
-                console.log('Auth check failed: Missing token or user data');
                 return false;
             }
             
@@ -119,7 +115,6 @@
                 // Basic token format validation
                 var parts = token.split('.');
                 if (parts.length !== 3) {
-                    console.log('Auth check failed: Invalid token format');
                     clearAuthData();
                     return false;
                 }
@@ -133,16 +128,13 @@
                 
                 // If token is expired (with buffer), try to refresh or return false
                 if (payload.exp && payload.exp < (currentTime - bufferTime)) {
-                    console.log('Auth check failed: Token expired');
                     return false;
                 }
                 
-                console.log('Auth check passed');
                 return true;
             } catch (e) {
                 // If we can't decode the token, but it exists, assume it's valid for now
                 // This helps with development when tokens might not be proper JWTs
-                console.log('Auth check warning: Could not decode token, but assuming valid:', e.message);
                 return true; // Be lenient in development
             }
         }

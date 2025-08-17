@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Posture Rating Display Test</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .webcam-container {
+            position: relative;
+            width: 640px;
+            height: 480px;
+            background: #000;
+            margin: 20px auto;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .webcam-placeholder {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, #333, #666);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 18px;
+        }
+        
+        /* Posture Rating Display Styles */
+        .posture-rating-display {
+            z-index: 1000;
+        }
+        
+        .posture-rating-badge {
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 12px 16px;
+            border-radius: 12px;
+            text-align: center;
+            min-width: 120px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+        }
+        
+        .posture-score {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+        
+        .posture-status {
+            font-size: 12px;
+            opacity: 0.9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+        
+        .posture-rating-badge.bg-success {
+            border-color: rgba(40, 167, 69, 0.6);
+        }
+        
+        .posture-rating-badge.bg-warning {
+            border-color: rgba(255, 193, 7, 0.6);
+        }
+        
+        .posture-rating-badge.bg-danger {
+            border-color: rgba(220, 53, 69, 0.6);
+        }
+        
+        .posture-rating-badge.bg-secondary {
+            border-color: rgba(108, 117, 125, 0.6);
+        }
+        
+        .controls {
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .status-indicators {
+            position: absolute;
+            top: 0;
+            left: 0;
+            margin: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <h1 class="text-center mb-4">Posture Rating Display Test</h1>
+        
+        <div class="controls">
+            <button class="btn btn-primary me-2" onclick="showPostureRating('good')">Show Good Posture</button>
+            <button class="btn btn-warning me-2" onclick="showPostureRating('needs_improvement')">Show Needs Improvement</button>
+            <button class="btn btn-danger me-2" onclick="showPostureRating('bad')">Show Bad Posture</button>
+            <button class="btn btn-secondary me-2" onclick="showPostureRating('no_pose')">Show No Pose</button>
+            <button class="btn btn-outline-secondary" onclick="hidePostureRating()">Hide Rating</button>
+        </div>
+        
+        <div class="webcam-container">
+            <!-- Status Indicators (Top Left) -->
+            <div class="status-indicators">
+                <div class="d-flex align-items-center">
+                    <span class="badge bg-success me-2">
+                        <i class="fas fa-user-check me-1"></i>
+                        Posture Analysis Active
+                    </span>
+                    <span class="badge bg-info">
+                        <i class="fas fa-check me-1"></i>
+                        Results Available
+                    </span>
+                </div>
+            </div>
+            
+            <!-- Posture Rating Display (Top Right) -->
+            <div id="postureRatingDisplay" class="position-absolute top-0 end-0 m-3" style="display: none;">
+                <div class="posture-rating-display">
+                    <div class="posture-rating-badge" id="postureRatingBadge">
+                        <div class="posture-score" id="postureScore">0/100</div>
+                        <div class="posture-status" id="postureStatus">
+                            <i class="fas fa-question-circle"></i>
+                            Unknown Status
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Webcam Placeholder -->
+            <div class="webcam-placeholder">
+                <div class="text-center">
+                    <i class="fas fa-video fa-3x mb-3"></i>
+                    <p>Webcam Feed Placeholder</p>
+                    <small>Posture rating will appear in top-right corner</small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="text-center mt-3">
+            <p class="text-muted">This demonstrates the posture rating display that will appear in the top-right corner of the webcam during interviews.</p>
+        </div>
+    </div>
+
+    <script>
+        function showPostureRating(status) {
+            const display = document.getElementById('postureRatingDisplay');
+            const badge = document.getElementById('postureRatingBadge');
+            const score = document.getElementById('postureScore');
+            const statusText = document.getElementById('postureStatus');
+            const statusIcon = statusText.querySelector('i');
+            
+            // Remove all background classes
+            badge.className = 'posture-rating-badge';
+            
+            // Set score and status based on posture type
+            let scoreValue, statusDisplay, iconClass, bgClass;
+            
+            switch (status) {
+                case 'good':
+                    scoreValue = Math.floor(Math.random() * 20) + 80; // 80-100
+                    statusDisplay = 'Good Posture!';
+                    iconClass = 'fa-thumbs-up';
+                    bgClass = 'bg-success';
+                    break;
+                case 'needs_improvement':
+                    scoreValue = Math.floor(Math.random() * 20) + 60; // 60-79
+                    statusDisplay = 'Needs Improvement';
+                    iconClass = 'fa-exclamation-triangle';
+                    bgClass = 'bg-warning';
+                    break;
+                case 'bad':
+                    scoreValue = Math.floor(Math.random() * 20) + 30; // 30-49
+                    statusDisplay = 'Poor Posture';
+                    iconClass = 'fa-times-circle';
+                    bgClass = 'bg-danger';
+                    break;
+                case 'no_pose':
+                    scoreValue = 0;
+                    statusDisplay = 'No Pose Detected';
+                    iconClass = 'fa-question-circle';
+                    bgClass = 'bg-secondary';
+                    break;
+                default:
+                    scoreValue = 0;
+                    statusDisplay = 'Unknown Status';
+                    iconClass = 'fa-question-circle';
+                    bgClass = 'bg-secondary';
+            }
+            
+            // Update the display
+            score.textContent = scoreValue + '/100';
+            statusText.innerHTML = `<i class="fas ${iconClass}"></i> ${statusDisplay}`;
+            badge.classList.add(bgClass);
+            
+            // Show the display
+            display.style.display = 'block';
+        }
+        
+        function hidePostureRating() {
+            document.getElementById('postureRatingDisplay').style.display = 'none';
+        }
+        
+        // Show a default rating on page load
+        window.addEventListener('load', function() {
+            setTimeout(() => showPostureRating('good'), 1000);
+        });
+    </script>
+</body>
+</html>

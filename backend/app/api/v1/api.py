@@ -3,7 +3,7 @@ Main API router for v1 endpoints
 """
 from fastapi import APIRouter
 
-from app.api.v1.endpoints import auth, users, interviews, questions, feedback, analytics, admin
+from app.api.v1.endpoints import auth, users, interviews, questions, feedback, analytics, admin, posture
 
 api_router = APIRouter()
 
@@ -15,3 +15,4 @@ api_router.include_router(questions.router, prefix="/questions", tags=["question
 api_router.include_router(feedback.router, prefix="/feedback", tags=["feedback"])
 api_router.include_router(analytics.router, prefix="/analytics", tags=["analytics"])
 api_router.include_router(admin.router, prefix="/admin", tags=["admin"])
+api_router.include_router(posture.router, prefix="/posture", tags=["posture"])
