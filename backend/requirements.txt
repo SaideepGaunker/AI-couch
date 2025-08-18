@@ -20,6 +20,7 @@ mediapipe==0.10.21
 pyaudioanalysis==0.3.14
 numpy==1.24.3
 scipy==1.11.4
+protobuf==3.20.3
 
 # Audio processing
 librosa==0.10.1

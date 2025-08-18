@@ -45,50 +45,67 @@
         <div class="col-md-5">
             <div class="card shadow h-100">
                 <div class="card-body p-0 d-flex flex-column">
-                                         <!-- Video Container -->
-                     <div class="flex-grow-1 position-relative bg-dark">
-                         <video id="interviewVideo" 
-                                class="w-100 h-100" 
-                                autoplay 
-                                muted 
-                                style="object-fit: cover;"
-                                ng-show="vm.cameraActive"></video>
-                         
-                         <!-- Body Gesture Score Display - Top Right Corner -->
-                         <div ng-if="vm.cameraActive && vm.postureEnabled && vm.postureFeedback" 
-                              class="position-absolute top-0 end-0 m-3">
-                             <div class="posture-rating-display">
-                                 <div class="posture-rating-badge" 
-                                      ng-class="{
+                    <!-- Video Container -->
+                    <div class="flex-grow-1 position-relative bg-dark">
+                        <video id="interviewVideo" class="w-100 h-100" autoplay muted style="object-fit: cover;"
+                            ng-show="vm.cameraActive"></video>
+
+                        <!-- Body Gesture Score Display - Top Right Corner -->
+                        <div ng-if="vm.cameraActive && vm.postureEnabled && vm.postureFeedback"
+                            class="position-absolute top-0 end-0 m-3">
+                            <div class="posture-rating-display">
+                                <div class="posture-rating-badge" ng-class="{
                                           'bg-success': vm.postureFeedback.posture_status === 'good',
                                           'bg-warning': vm.postureFeedback.posture_status === 'needs_improvement',
                                           'bg-danger': vm.postureFeedback.posture_status === 'bad',
                                           'bg-secondary': vm.postureFeedback.posture_status === 'no_pose' || vm.postureFeedback.posture_status === 'error'
                                       }">
-                                     <div class="posture-score">{{ vm.postureFeedback.posture_score || 0 }}/100</div>
-                                     <div class="posture-status">
-                                         <i class="fas" ng-class="{
+                                    <div class="posture-score">{{ vm.postureFeedback.posture_score || 0 }}/100</div>
+                                    <div class="posture-status">
+                                        <i class="fas" ng-class="{
                                              'fa-thumbs-up': vm.postureFeedback.posture_status === 'good',
                                              'fa-exclamation-triangle': vm.postureFeedback.posture_status === 'needs_improvement',
                                              'fa-times-circle': vm.postureFeedback.posture_status === 'bad',
                                              'fa-question-circle': vm.postureFeedback.posture_status === 'no_pose' || vm.postureFeedback.posture_status === 'error'
                                          }"></i>
-                                         {{ vm.getPostureStatusText(vm.postureFeedback.posture_status) }}
-                                     </div>
-                                 </div>
-                             </div>
-                         </div>
-                        
-                        
-                        
-                        
-                        
-                        
-                        
-                        
-                        
+                                        {{ vm.getPostureStatusText(vm.postureFeedback.posture_status) }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Voice Analysis Score Display - Top Left Corner -->
+                        <div ng-if="vm.voiceAnalysisEnabled" class="position-absolute top-0 start-0 m-3">
+                            <div class="voice-rating-display">
+                                <div class="voice-rating-badge" ng-class="{
+                                          'bg-success': vm.currentVoiceScore >= 80,
+                                          'bg-warning': vm.currentVoiceScore >= 60 && vm.currentVoiceScore < 80,
+                                          'bg-danger': vm.currentVoiceScore > 0 && vm.currentVoiceScore < 60,
+                                          'bg-secondary': vm.currentVoiceScore === 0 || !vm.voiceAnalysisActive
+                                      }">
+                                    <div class="voice-score">{{ vm.currentVoiceScore || 0 }}/100</div>
+                                    <div class="voice-status">
+                                        <i class="fas" ng-class="{
+                                             'fa-microphone': vm.voiceAnalysisActive,
+                                             'fa-microphone-slash': !vm.voiceAnalysisActive
+                                         }"></i>
+                                        {{ vm.voiceAnalysisActive ? 'Voice Analysis' : 'Click Speak' }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+
+
+
+
+
+
+
+
                         <!-- Camera Error State -->
-                        <div ng-if="vm.cameraError" class="position-absolute top-50 start-50 translate-middle text-center text-white">
+                        <div ng-if="vm.cameraError"
+                            class="position-absolute top-50 start-50 translate-middle text-center text-white">
                             <i class="fas fa-exclamation-triangle fa-3x mb-3"></i>
                             <p>{{vm.cameraError}}</p>
                             <button class="btn btn-outline-light btn-sm" ng-click="vm.startCamera()">
@@ -96,9 +113,10 @@
                                 Retry Camera
                             </button>
                         </div>
-                        
+
                         <!-- Camera Loading State -->
-                        <div ng-if="!vm.cameraActive && !vm.cameraError" class="position-absolute top-50 start-50 translate-middle text-center text-white">
+                        <div ng-if="!vm.cameraActive && !vm.cameraError"
+                            class="position-absolute top-50 start-50 translate-middle text-center text-white">
                             <i class="fas fa-video fa-3x mb-3"></i>
                             <p>Initializing camera...</p>
                         </div>
@@ -124,17 +142,27 @@
                                     <i class="fas fa-circle me-1"></i>
                                     {{vm.isRecording ? 'Recording' : 'Standby'}}
                                 </span>
-                                                                 <span class="badge" ng-class="vm.postureAnalysisActive ? 'bg-success' : (vm.postureEnabled ? 'bg-info' : 'bg-secondary')">
-                                     <i class="fas fa-user-check me-1"></i>
-                                     {{vm.postureAnalysisActive ? 'Analyzing' : (vm.postureEnabled ? 'Posture On' : 'Posture Off')}}
-                                 </span>
+                                <span class="badge"
+                                    ng-class="vm.postureAnalysisActive ? 'bg-success' : (vm.postureEnabled ? 'bg-info' : 'bg-secondary')">
+                                    <i class="fas fa-user-check me-1"></i>
+                                    {{vm.postureAnalysisActive ? 'Analyzing' : (vm.postureEnabled ? 'Posture On' :
+                                    'Posture Off')}}
+                                </span>
+                                <span class="badge"
+                                    ng-class="vm.voiceAnalysisActive ? 'bg-success' : (vm.voiceAnalysisEnabled ? 'bg-info' : 'bg-secondary')">
+                                    <i class="fas fa-microphone me-1"></i>
+                                    {{vm.voiceAnalysisActive ? 'Voice Active' : (vm.voiceAnalysisEnabled ? 'Click Speak'
+                                    : 'Voice Off')}}
+                                </span>
                             </div>
                             <div class="d-flex gap-2">
-                                <button class="btn btn-sm btn-outline-info" ng-click="vm.togglePostureDetection()" ng-disabled="!vm.cameraActive">
+                                <button class="btn btn-sm btn-outline-info" ng-click="vm.togglePostureDetection()"
+                                    ng-disabled="!vm.cameraActive">
                                     <i class="fas fa-user-check"></i>
                                     {{vm.postureEnabled ? 'Disable' : 'Enable'}} Posture
                                 </button>
-                                <button class="btn btn-sm btn-outline-secondary" ng-click="vm.cameraActive ? vm.stopCamera() : vm.startCamera()">
+                                <button class="btn btn-sm btn-outline-secondary"
+                                    ng-click="vm.cameraActive ? vm.stopCamera() : vm.startCamera()">
                                     <i class="fas" ng-class="vm.cameraActive ? 'fa-stop' : 'fa-play'"></i>
                                     {{vm.cameraActive ? 'Stop' : 'Start'}}
                                 </button>
@@ -156,11 +184,13 @@
                 </div>
                 <div class="card-body p-0 d-flex flex-column">
                     <!-- Chat Messages -->
-                    <div id="chatContainer" class="flex-grow-1 p-3" style="overflow-y: auto; max-height: calc(100vh - 400px);">
+                    <div id="chatContainer" class="flex-grow-1 p-3"
+                        style="overflow-y: auto; max-height: calc(100vh - 400px);">
                         <div ng-repeat="message in vm.chatMessages" class="mb-3">
                             <!-- AI Message -->
                             <div ng-if="message.sender === 'ai'" class="d-flex align-items-start">
-                                <div class="avatar-circle bg-primary text-white me-3 flex-shrink-0" style="width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                                <div class="avatar-circle bg-primary text-white me-3 flex-shrink-0"
+                                    style="width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
                                     <i class="fas fa-robot"></i>
                                 </div>
                                 <div class="message-bubble bg-light p-3 rounded-3 shadow-sm" style="max-width: 80%;">
@@ -168,14 +198,16 @@
                                     <small class="text-muted">{{message.timestamp | date:'HH:mm'}}</small>
                                 </div>
                             </div>
-                            
+
                             <!-- User Message -->
                             <div ng-if="message.sender === 'user'" class="d-flex align-items-start justify-content-end">
-                                <div class="message-bubble bg-success text-white p-3 rounded-3 shadow-sm me-3" style="max-width: 80%;">
+                                <div class="message-bubble bg-success text-white p-3 rounded-3 shadow-sm me-3"
+                                    style="max-width: 80%;">
                                     <p class="mb-1">{{message.message}}</p>
                                     <small class="text-white-50">{{message.timestamp | date:'HH:mm'}}</small>
                                 </div>
-                                <div class="avatar-circle bg-success text-white flex-shrink-0" style="width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                                <div class="avatar-circle bg-success text-white flex-shrink-0"
+                                    style="width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
                                     <i class="fas fa-user"></i>
                                 </div>
                             </div>
@@ -183,7 +215,8 @@
 
                         <!-- Loading indicator -->
                         <div ng-if="vm.loading" class="d-flex align-items-start">
-                            <div class="avatar-circle bg-primary text-white me-3 flex-shrink-0" style="width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                            <div class="avatar-circle bg-primary text-white me-3 flex-shrink-0"
+                                style="width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
                                 <i class="fas fa-robot"></i>
                             </div>
                             <div class="message-bubble bg-light p-3 rounded-3 shadow-sm">
@@ -220,44 +253,39 @@
 
                         <!-- Answer Input -->
                         <div class="mb-3">
-                            <textarea class="form-control" 
-                                      ng-model="vm.currentAnswer" 
-                                      placeholder="Your answer will appear here as you speak, or you can type directly..."
-                                      rows="3"
-                                      ng-disabled="vm.loading"></textarea>
+                            <textarea class="form-control" ng-model="vm.currentAnswer"
+                                placeholder="Your answer will appear here as you speak, or you can type directly..."
+                                rows="3" ng-disabled="vm.loading"></textarea>
                         </div>
 
                         <!-- Control Buttons -->
                         <div class="d-flex justify-content-center gap-2 flex-wrap">
                             <!-- Voice Input Button -->
-                            <button class="btn" 
-                                    ng-class="vm.isListening ? 'btn-danger' : 'btn-success'"
-                                    ng-click="vm.isListening ? vm.stopListening() : vm.startListening()"
-                                    ng-disabled="vm.loading || vm.isSpeaking">
+                            <button class="btn" ng-class="vm.isListening ? 'btn-danger' : 'btn-success'"
+                                ng-click="vm.isListening ? vm.stopListening() : vm.startListening()"
+                                ng-disabled="vm.loading || vm.isSpeaking">
                                 <i class="fas" ng-class="vm.isListening ? 'fa-stop' : 'fa-microphone'"></i>
                                 {{vm.isListening ? 'Stop' : 'Speak'}}
                             </button>
 
                             <!-- Submit Answer Button -->
-                            <button class="btn btn-primary" 
-                                    ng-click="vm.submitAnswer()" 
-                                    ng-disabled="vm.loading || !vm.currentAnswer.trim() || vm.isListening">
+                            <button class="btn btn-primary" ng-click="vm.submitAnswer()"
+                                ng-disabled="vm.loading || !vm.currentAnswer.trim() || vm.isListening">
                                 <i class="fas fa-paper-plane me-1"></i>
                                 Submit
                             </button>
 
                             <!-- Skip Question Button -->
-                            <button class="btn btn-outline-warning" 
-                                    ng-click="vm.skipQuestion()" 
-                                    ng-disabled="vm.loading || vm.isListening">
+                            <button class="btn btn-outline-warning" ng-click="vm.skipQuestion()"
+                                ng-disabled="vm.loading || vm.isListening">
                                 <i class="fas fa-forward me-1"></i>
                                 Skip
                             </button>
 
                             <!-- Repeat Question Button -->
-                            <button class="btn btn-outline-info" 
-                                    ng-click="vm.speakQuestion(vm.currentQuestion.content || vm.currentQuestion.question_text)" 
-                                    ng-disabled="vm.loading || vm.isSpeaking || vm.isListening">
+                            <button class="btn btn-outline-info"
+                                ng-click="vm.speakQuestion(vm.currentQuestion.content || vm.currentQuestion.question_text)"
+                                ng-disabled="vm.loading || vm.isSpeaking || vm.isListening">
                                 <i class="fas fa-redo me-1"></i>
                                 Repeat
                             </button>
@@ -279,61 +307,109 @@
 
 <!-- Custom CSS for blinking recording indicator -->
 <style>
-.blink {
-    animation: blink-animation 1s steps(5, start) infinite;
-}
-
-@keyframes blink-animation {
-    to {
-        visibility: hidden;
+    .blink {
+        animation: blink-animation 1s steps(5, start) infinite;
     }
-}
 
-/* Posture Rating Display Styles */
-.posture-rating-display {
-    z-index: 1000;
-}
+    @keyframes blink-animation {
+        to {
+            visibility: hidden;
+        }
+    }
 
-.posture-rating-badge {
-    background: rgba(0, 0, 0, 0.8);
-    color: white;
-    padding: 12px 16px;
-    border-radius: 12px;
-    text-align: center;
-    min-width: 120px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-    border: 2px solid rgba(255, 255, 255, 0.2);
-    backdrop-filter: blur(10px);
-}
+    /* Posture Rating Display Styles */
+    .posture-rating-display {
+        z-index: 1000;
+    }
 
-.posture-score {
-    font-size: 18px;
-    font-weight: bold;
-    margin-bottom: 4px;
-}
+    .posture-rating-badge {
+        background: rgba(0, 0, 0, 0.8);
+        color: white;
+        padding: 12px 16px;
+        border-radius: 12px;
+        text-align: center;
+        min-width: 120px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        border: 2px solid rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(10px);
+    }
 
-.posture-status {
-    font-size: 12px;
-    opacity: 0.9;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-}
+    .posture-score {
+        font-size: 18px;
+        font-weight: bold;
+        margin-bottom: 4px;
+    }
 
-.posture-rating-badge.bg-success {
-    border-color: rgba(40, 167, 69, 0.6);
-}
+    .posture-status {
+        font-size: 12px;
+        opacity: 0.9;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+    }
 
-.posture-rating-badge.bg-warning {
-    border-color: rgba(255, 193, 7, 0.6);
-}
+    .posture-rating-badge.bg-success {
+        border-color: rgba(40, 167, 69, 0.6);
+    }
 
-.posture-rating-badge.bg-danger {
-    border-color: rgba(220, 53, 69, 0.6);
-}
+    .posture-rating-badge.bg-warning {
+        border-color: rgba(255, 193, 7, 0.6);
+    }
 
-.posture-rating-badge.bg-secondary {
-    border-color: rgba(108, 117, 125, 0.6);
-}
+    .posture-rating-badge.bg-danger {
+        border-color: rgba(220, 53, 69, 0.6);
+    }
+
+    .posture-rating-badge.bg-secondary {
+        border-color: rgba(108, 117, 125, 0.6);
+    }
+
+    /* Voice Analysis Rating Display Styles */
+    .voice-rating-display {
+        z-index: 1000;
+    }
+
+    .voice-rating-badge {
+        background: rgba(0, 0, 0, 0.8);
+        color: white;
+        padding: 12px 16px;
+        border-radius: 12px;
+        text-align: center;
+        min-width: 120px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        border: 2px solid rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(10px);
+    }
+
+    .voice-score {
+        font-size: 18px;
+        font-weight: bold;
+        margin-bottom: 4px;
+    }
+
+    .voice-status {
+        font-size: 12px;
+        opacity: 0.9;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+    }
+
+    .voice-rating-badge.bg-success {
+        border-color: rgba(40, 167, 69, 0.6);
+    }
+
+    .voice-rating-badge.bg-warning {
+        border-color: rgba(255, 193, 7, 0.6);
+    }
+
+    .voice-rating-badge.bg-danger {
+        border-color: rgba(220, 53, 69, 0.6);
+    }
+
+    .voice-rating-badge.bg-secondary {
+        border-color: rgba(108, 117, 125, 0.6);
+    }
 </style>

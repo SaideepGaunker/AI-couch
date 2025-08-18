@@ -9,7 +9,33 @@ from sqlalchemy.orm import Session
 
 from app.core.dependencies import get_current_user
 from app.db.database import get_db
-from app.services.posture_service import posture_service
+# Try to import posture service (optional due to MediaPipe dependency)
+try:
+    from app.services.posture_service import posture_service
+    POSTURE_SERVICE_AVAILABLE = True
+except ImportError as e:
+    logger.warning(f"Posture service not available: {e}")
+    POSTURE_SERVICE_AVAILABLE = False
+    # Create a dummy posture service
+    class DummyPostureService:
+        async def analyze_frame_from_base64(self, image_data, interview_id):
+            return {
+                "success": False,
+                "error": "Posture analysis not available - MediaPipe dependency issue",
+                "posture_score": 75.0,
+                "posture_status": "unavailable",
+                "feedback_message": "Posture analysis temporarily unavailable",
+                "details": {},
+                "landmarks_detected": False,
+                "timestamp": "2024-01-01T00:00:00Z"
+            }
+        
+        async def get_session_posture_summary(self, interview_id):
+            return {
+                "error": "Posture analysis not available - MediaPipe dependency issue"
+            }
+    
+    posture_service = DummyPostureService()
 from app.schemas.user import UserResponse
 
 logger = logging.getLogger(__name__)

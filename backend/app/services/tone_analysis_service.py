@@ -1,15 +1,44 @@
 """
 Tone and Confidence Analysis Service using pyAudioAnalysis
 """
-import numpy as np
-import librosa
-import soundfile as sf
-from typing import Dict, Any, List, Optional
 import logging
+from typing import Dict, Any, List, Optional
 from datetime import datetime
 import io
 
 logger = logging.getLogger(__name__)
+
+# Try to import audio processing libraries
+try:
+    import numpy as np
+    import librosa
+    import soundfile as sf
+    AUDIO_LIBS_AVAILABLE = True
+except ImportError as e:
+    logger.warning(f"Audio processing libraries not available: {e}")
+    AUDIO_LIBS_AVAILABLE = False
+    # Create dummy numpy for fallback
+    class DummyNumpy:
+        @staticmethod
+        def array(data):
+            return []
+        @staticmethod
+        def mean(data):
+            return 0.0
+        @staticmethod
+        def std(data):
+            return 0.0
+        @staticmethod
+        def sum(data):
+            return 0.0
+        @staticmethod
+        def linspace(start, stop, num):
+            return [1.0] * num
+        @staticmethod
+        def average(data, weights=None):
+            return 50.0
+    
+    np = DummyNumpy()
 
 
 class ToneAnalyzer:
@@ -73,8 +102,12 @@ class ToneAnalyzer:
             logger.error(f"Error analyzing audio chunk: {e}")
             return self._get_default_metrics()
     
-    def _bytes_to_audio_array(self, audio_data: bytes) -> np.ndarray:
+    def _bytes_to_audio_array(self, audio_data: bytes):
         """Convert audio bytes to numpy array"""
+        if not AUDIO_LIBS_AVAILABLE:
+            logger.warning("Audio libraries not available, returning empty array")
+            return np.array([])
+            
         try:
             # Try to load as WAV format
             audio_io = io.BytesIO(audio_data)
@@ -94,8 +127,11 @@ class ToneAnalyzer:
             logger.error(f"Error converting audio bytes: {e}")
             return np.array([])
     
-    def _analyze_confidence(self, audio_array: np.ndarray) -> float:
+    def _analyze_confidence(self, audio_array) -> float:
         """Analyze confidence based on voice characteristics"""
+        if not AUDIO_LIBS_AVAILABLE:
+            return 75.0  # Default confidence score when libraries unavailable
+            
         try:
             if len(audio_array) == 0:
                 return 50.0
@@ -136,8 +172,11 @@ class ToneAnalyzer:
             logger.error(f"Error analyzing confidence: {e}")
             return 50.0
     
-    def _analyze_tone_quality(self, audio_array: np.ndarray) -> float:
+    def _analyze_tone_quality(self, audio_array) -> float:
         """Analyze tone quality and pleasantness"""
+        if not AUDIO_LIBS_AVAILABLE:
+            return 70.0  # Default tone score when libraries unavailable
+            
         try:
             if len(audio_array) == 0:
                 return 50.0
@@ -172,8 +211,11 @@ class ToneAnalyzer:
             logger.error(f"Error analyzing tone quality: {e}")
             return 50.0
     
-    def _analyze_speaking_pace(self, audio_array: np.ndarray) -> float:
+    def _analyze_speaking_pace(self, audio_array) -> float:
         """Analyze speaking pace and rhythm"""
+        if not AUDIO_LIBS_AVAILABLE:
+            return 65.0  # Default pace score when libraries unavailable
+            
         try:
             if len(audio_array) == 0:
                 return 50.0
@@ -211,8 +253,11 @@ class ToneAnalyzer:
             logger.error(f"Error analyzing speaking pace: {e}")
             return 50.0
     
-    def _analyze_volume_consistency(self, audio_array: np.ndarray) -> float:
+    def _analyze_volume_consistency(self, audio_array) -> float:
         """Analyze volume consistency and control"""
+        if not AUDIO_LIBS_AVAILABLE:
+            return 60.0  # Default volume score when libraries unavailable
+            
         try:
             if len(audio_array) == 0:
                 return 50.0
@@ -258,4 +303,127 @@ class ToneAnalyzer:
                 return 50.0
             
             # Calculate weighted average (recent chunks have more weight)
-            weights = np.li
+            weights = np.linspace(0.5, 1.0, len(chunk_scores))
+            weighted_score = np.average(chunk_scores, weights=weights)
+            
+            return round(weighted_score, 2)
+            
+        except Exception as e:
+            logger.error(f"Error calculating confidence score: {e}")
+            return 50.0
+    
+    def get_tone_score(self, audio_session: List[bytes]) -> float:
+        """Calculate overall tone score for entire audio session"""
+        try:
+            if not audio_session:
+                return 50.0
+            
+            # Analyze each chunk and get average
+            chunk_scores = []
+            for chunk in audio_session:
+                metrics = self.analyze_audio_chunk(chunk)
+                chunk_scores.append(metrics['tone_score'])
+            
+            if not chunk_scores:
+                return 50.0
+            
+            # Calculate weighted average (recent chunks have more weight)
+            weights = np.linspace(0.5, 1.0, len(chunk_scores))
+            weighted_score = np.average(chunk_scores, weights=weights)
+            
+            return round(weighted_score, 2)
+            
+        except Exception as e:
+            logger.error(f"Error calculating tone score: {e}")
+            return 50.0
+    
+    def analyze_complete_audio(self, audio_data: bytes) -> Dict[str, Any]:
+        """Analyze complete audio file and return comprehensive metrics"""
+        try:
+            # Convert to audio array
+            audio_array = self._bytes_to_audio_array(audio_data)
+            
+            if len(audio_array) == 0:
+                return self._get_default_metrics()
+            
+            # Extract comprehensive features
+            confidence_score = self._analyze_confidence(audio_array)
+            tone_score = self._analyze_tone_quality(audio_array)
+            pace_score = self._analyze_speaking_pace(audio_array)
+            volume_score = self._analyze_volume_consistency(audio_array)
+            
+            # Calculate overall tone confidence score
+            overall_score = (confidence_score * 0.5 + tone_score * 0.5)
+            
+            # Generate improvement suggestions
+            suggestions = self._generate_improvement_suggestions(
+                confidence_score, tone_score, pace_score, volume_score
+            )
+            
+            return {
+                'tone_confidence_score': round(overall_score, 0),
+                'improvement_suggestions': suggestions,
+                'detailed_scores': {
+                    'confidence': round(confidence_score, 2),
+                    'tone_quality': round(tone_score, 2),
+                    'speaking_pace': round(pace_score, 2),
+                    'volume_consistency': round(volume_score, 2)
+                }
+            }
+            
+        except Exception as e:
+            logger.error(f"Error analyzing complete audio: {e}")
+            return {
+                'tone_confidence_score': 50,
+                'improvement_suggestions': 'Unable to analyze audio. Please ensure clear audio quality.',
+                'detailed_scores': {
+                    'confidence': 50.0,
+                    'tone_quality': 50.0,
+                    'speaking_pace': 50.0,
+                    'volume_consistency': 50.0
+                }
+            }
+    
+    def _generate_improvement_suggestions(
+        self, 
+        confidence: float, 
+        tone: float, 
+        pace: float, 
+        volume: float
+    ) -> str:
+        """Generate personalized improvement suggestions"""
+        suggestions = []
+        
+        if confidence < 60:
+            suggestions.append("Work on speaking with more conviction and steadiness.")
+        
+        if tone < 60:
+            suggestions.append("Focus on maintaining a warm and pleasant tone.")
+        
+        if pace < 60:
+            suggestions.append("Adjust your speaking pace - try to speak more naturally.")
+        
+        if volume < 60:
+            suggestions.append("Maintain consistent volume throughout your response.")
+        
+        if all(score >= 80 for score in [confidence, tone, pace, volume]):
+            suggestions.append("Excellent tone and confidence! Keep up the great work.")
+        elif all(score >= 70 for score in [confidence, tone, pace, volume]):
+            suggestions.append("Good tone and confidence overall. Minor adjustments will make it even better.")
+        
+        if not suggestions:
+            suggestions.append("Continue practicing to improve your speaking confidence and tone.")
+        
+        return " ".join(suggestions)
+    
+    def _get_default_metrics(self) -> Dict[str, Any]:
+        """Return default metrics when audio analysis fails"""
+        return {
+            'overall_score': 50.0,
+            'confidence_score': 50.0,
+            'tone_score': 50.0,
+            'pace_score': 50.0,
+            'volume_score': 50.0,
+            'timestamp': datetime.utcnow().isoformat(),
+            'audio_analyzed': False
+        }

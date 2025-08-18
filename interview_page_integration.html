@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interview with Voice Analysis</title>
+    <style>
+        .voice-analysis-panel {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .voice-status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+
+        .voice-status.recording {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .voice-status.analyzing {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .voice-status.completed {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .score-excellent {
+            color: #28a745;
+            font-weight: bold;
+        }
+
+        .score-good {
+            color: #ffc107;
+            font-weight: bold;
+        }
+
+        .score-needs-improvement {
+            color: #dc3545;
+            font-weight: bold;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin: 15px 0;
+        }
+
+        .metric-card {
+            background: white;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #e9ecef;
+            text-align: center;
+        }
+
+        .metric-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #495057;
+        }
+
+        .metric-label {
+            font-size: 12px;
+            color: #6c757d;
+            text-transform: uppercase;
+            margin-top: 5px;
+        }
+
+        .control-buttons {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Interview Session</h1>
+
+        <!-- Voice Analysis Panel -->
+        <div class="voice-analysis-panel">
+            <h3>🎤 Voice Confidence Analysis</h3>
+
+            <!-- Status Display -->
+            <div id="voice-analysis-status" class="voice-status">
+                Voice analysis ready - click "Start Analysis" to begin
+            </div>
+
+            <!-- Current Score Display -->
+            <div style="text-align: center; margin: 20px 0;">
+                <h4>Current Confidence Score</h4>
+                <div id="current-confidence-score" class="metric-value">--/100</div>
+            </div>
+
+            <!-- Detailed Metrics -->
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div id="voice-volume" class="metric-value">--</div>
+                    <div class="metric-label">Volume</div>
+                </div>
+                <div class="metric-card">
+                    <div id="voice-pitch" class="metric-value">--</div>
+                    <div class="metric-label">Pitch Stability</div>
+                </div>
+                <div class="metric-card">
+                    <div id="voice-clarity" class="metric-value">--</div>
+                    <div class="metric-label">Clarity</div>
+                </div>
+                <div class="metric-card">
+                    <div id="voice-consistency" class="metric-value">--</div>
+                    <div class="metric-label">Consistency</div>
+                </div>
+            </div>
+
+            <!-- Control Buttons -->
+            <div class="control-buttons">
+                <button id="start-analysis-btn" class="btn btn-primary" onclick="startVoiceAnalysis()">
+                    Start Analysis
+                </button>
+                <button id="stop-analysis-btn" class="btn btn-danger" onclick="stopVoiceAnalysis()" disabled>
+                    Stop Analysis
+                </button>
+                <button id="get-stats-btn" class="btn btn-success" onclick="showStats()">
+                    Show Stats
+                </button>
+            </div>
+        </div>
+
+        <!-- Interview Question Area -->
+        <div class="interview-section">
+            <h3>Interview Question</h3>
+            <div id="current-question">
+                Tell me about yourself and your experience.
+            </div>
+
+            <div style="margin: 20px 0;">
+                <button class="btn btn-primary" onclick="nextQuestion()">Next Question</button>
+                <button class="btn btn-success" onclick="completeInterview()">Complete Interview</button>
+            </div>
+        </div>
+
+        <!-- Results Display -->
+        <div id="results-panel"
+            style="display: none; margin-top: 20px; padding: 20px; background: #f8f9fa; border-radius: 8px;">
+            <h3>Voice Analysis Results</h3>
+            <div id="results-content"></div>
+        </div>
+    </div>
+
+    <!-- Include the voice analysis script -->
+    <script src="frontend_voice_analysis.js"></script>
+
+    <script>
+        // Initialize voice analysis
+        let voiceAnalysis = null;
+        let currentSessionId = 1; // Replace with actual session ID
+        let currentQuestionId = 1; // Replace with actual question ID
+        let authToken = 'your-auth-token-here'; // Replace with actual token
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', function () {
+            voiceAnalysis = new InterviewVoiceAnalysis('http://localhost:8000/api/v1');
+            console.log('Voice analysis initialized');
+        });
+
+        // Start voice analysis
+        async function startVoiceAnalysis() {
+            if (!voiceAnalysis) {
+                alert('Voice analysis not initialized');
+                return;
+            }
+
+            const result = await voiceAnalysis.startInterviewAnalysis(currentSessionId, currentQuestionId);
+
+            if (result.success) {
+                document.getElementById('start-analysis-btn').disabled = true;
+                document.getElementById('stop-analysis-btn').disabled = false;
+            } else {
+                alert('Failed to start voice analysis: ' + result.message);
+            }
+        }
+
+        // Stop voice analysis
+        async function stopVoiceAnalysis() {
+            if (!voiceAnalysis) return;
+
+            const result = await voiceAnalysis.stopInterviewAnalysis(authToken);
+
+            document.getElementById('start-analysis-btn').disabled = false;
+            document.getElementById('stop-analysis-btn').disabled = true;
+
+            if (result.success) {
+                showResults(result.summary);
+            } else {
+                alert('Error stopping analysis: ' + result.message);
+            }
+        }
+
+        // Show current statistics
+        function showStats() {
+            if (!voiceAnalysis) return;
+
+            const stats = voiceAnalysis.getCurrentStats();
+            alert(`Current Stats:\nAverage Score: ${stats.averageScore}/100\nDuration: ${stats.duration}s\nSamples: ${stats.totalSamples}`);
+        }
+
+        // Show results
+        function showResults(summary) {
+            const resultsPanel = document.getElementById('results-panel');
+            const resultsContent = document.getElementById('results-content');
+
+            resultsContent.innerHTML = `
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+                    <div class="metric-card">
+                        <div class="metric-value ${getScoreClass(summary.averageScore)}">${summary.averageScore}/100</div>
+                        <div class="metric-label">Average Confidence Score</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">${summary.duration}s</div>
+                        <div class="metric-label">Analysis Duration</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">${summary.totalSamples}</div>
+                        <div class="metric-label">Data Points</div>
+                    </div>
+                </div>
+                <div style="margin-top: 20px;">
+                    <h4>Improvement Suggestions:</h4>
+                    <p>${summary.suggestions}</p>
+                </div>
+            `;
+
+            resultsPanel.style.display = 'block';
+        }
+
+        // Get score class for styling
+        function getScoreClass(score) {
+            if (score >= 80) return 'score-excellent';
+            if (score >= 60) return 'score-good';
+            return 'score-needs-improvement';
+        }
+
+        // Simulate next question
+        function nextQuestion() {
+            currentQuestionId++;
+            document.getElementById('current-question').textContent = `Question ${currentQuestionId}: What are your strengths and weaknesses?`;
+
+            // Reset analysis for new question
+            if (voiceAnalysis && voiceAnalysis.isRecording) {
+                stopVoiceAnalysis().then(() => {
+                    setTimeout(() => startVoiceAnalysis(), 1000);
+                });
+            }
+        }
+
+        // Complete interview
+        async function completeInterview() {
+            if (voiceAnalysis && voiceAnalysis.isRecording) {
+                await stopVoiceAnalysis();
+            }
+
+            alert('Interview completed! Voice analysis results have been saved.');
+        }
+
+        // Handle page unload
+        window.addEventListener('beforeunload', function () {
+            if (voiceAnalysis && voiceAnalysis.isRecording) {
+                voiceAnalysis.stopInterviewAnalysis(authToken);
+            }
+        });
+    </script>
+</body>
+
+</html>
