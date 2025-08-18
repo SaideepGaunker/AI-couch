@@ -13,10 +13,10 @@ class Settings(BaseSettings):
     DEBUG: bool = False
     
     # Database
-    DATABASE_URL: str = "mysql+pymysql://root:admin@server/interview_prep_db" # Change this
+    DATABASE_URL: str = "" # Change this
     
     # Security
-    SECRET_KEY: str = "4b5f3a72e4d0b68339d6e0a5d4021c9a8b86fef39414a84c63f8a132f54f1c78" # Change this
+    SECRET_KEY: str = "" # Change this
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
