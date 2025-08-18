@@ -58,6 +58,14 @@ interview-prep-ai-coach/
 - MySQL 8.0+
 - Git
 
+#### Environment Setup
+```bash
+python -m venv venv
+step2
+pip install mysql-connector-python
+step 4
+```
+
 #### Backend Setup
 
 1. **Start Backend Server**
