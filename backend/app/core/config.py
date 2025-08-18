@@ -13,10 +13,10 @@ class Settings(BaseSettings):
     DEBUG: bool = False
     
     # Database
-    DATABASE_URL: str = "mysql+pymysql://root:admin@server/interview_prep_db"
+    DATABASE_URL: str = "mysql+pymysql://root:admin@server/interview_prep_db" # Change this
     
     # Security
-    SECRET_KEY: str = "4b5f3a72e4d0b68339d6e0a5d4021c9a8b86fef39414a84c63f8a132f54f1c78"
+    SECRET_KEY: str = "4b5f3a72e4d0b68339d6e0a5d4021c9a8b86fef39414a84c63f8a132f54f1c78" # Change this
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     ALLOWED_HOSTS: List[str] = ["http://localhost:4200", "http://localhost:3000"]
     
     # AI Services
-    GEMINI_API_KEY: str = "AIzaSyBPheiRK87uOc7mrraKDeFE3GUluueNy04"
+    GEMINI_API_KEY: str = "" # Change this
     
     
     # Email Configuration
