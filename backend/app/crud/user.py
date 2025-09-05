@@ -34,8 +34,7 @@ def create_user(db: Session, user: UserCreate) -> User:
         name=user.name,
         role=user.role,
         target_roles=user.target_roles if user.target_roles is not None else [],
-        experience_level=user.experience_level,
-        institution_id=user.institution_id
+        experience_level=user.experience_level
     )
     db.add(db_user)
     db.commit()

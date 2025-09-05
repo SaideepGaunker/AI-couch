@@ -9,6 +9,15 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="styles/main.css">
   <link rel="stylesheet" href="styles/components.css">
+  <link rel="stylesheet" href="styles/button-fixes.css">
+  <link rel="stylesheet" href="components/role-selector/role-selector.styles.css">
+  
+  <!-- AngularJS ng-cloak to prevent flash of uncompiled content -->
+  <style>
+    [ng\:cloak], [ng-cloak], [data-ng-cloak], [x-ng-cloak], .ng-cloak, .x-ng-cloak {
+      display: none !important;
+    }
+  </style>
 </head>
 
 <body ng-controller="MainController as vm">
@@ -51,6 +60,18 @@
     </div>
   </nav>
 
+  <!-- Toast Notifications -->
+  <toast-notification></toast-notification>
+  
+  <!-- Loading Indicator -->
+  <loading-indicator></loading-indicator>
+  
+  <!-- Confirmation Dialog -->
+  <confirmation-dialog></confirmation-dialog>
+  
+  <!-- Progress Indicator -->
+  <progress-indicator></progress-indicator>
+
   <!-- Main Content -->
   <div class="container-fluid">
     <div ng-view></div>
@@ -59,7 +80,7 @@
   <!-- Footer -->
   <footer class="bg-light text-center text-lg-start mt-5">
     <div class="text-center p-3">
-      © 2024 Interview Prep AI Coach. All rights reserved.
+      © 2025 Interview Prep AI Coach. Empowering your interview success. Practice, learn, and grow with confidence.
     </div>
   </footer>
 
@@ -73,6 +94,7 @@
   <!-- App Scripts -->
   <script src="js/app.js"></script>
   <script src="js/controllers/main.controller.js"></script>
+  <script src="js/controllers/unified-practice.controller.js"></script>
 
   <!-- Component Scripts -->
   <script src="components/home/home.component.js"></script>
@@ -97,13 +119,26 @@
   <script src="components/interview-chat/interview-chat.controller.js"></script>
   <script src="components/test/test.component.js"></script>
   <script src="components/test/test.controller.js"></script>
+  <script src="components/role-selector/role-selector.component.js"></script>
+  <script src="components/toast-notification/toast-notification.component.js"></script>
+  <script src="components/loading-indicator/loading-indicator.component.js"></script>
+  <script src="components/confirmation-dialog/confirmation-dialog.component.js"></script>
+  <script src="components/progress-indicator/progress-indicator.component.js"></script>
+  <script src="components/form-error-display/form-error-display.component.js"></script>
 
   <!-- Service Scripts -->
+  <script src="js/services/error-handling.service.js"></script>
   <script src="js/services/api.service.js"></script>
   <script src="js/services/auth.service.js"></script>
   <script src="js/services/auth.interceptor.js"></script>
+  <script src="js/services/form-error.service.js"></script>
+  <script src="js/services/difficulty-display.service.js"></script>
   <script src="js/services/interview.service.js"></script>
   <script src="js/services/user.service.js"></script>
+  <script src="js/services/session-data.service.js"></script>
+  <script src="js/services/session-settings.service.js"></script>
+  <script src="js/services/unified-difficulty-state.service.js"></script>
+  <script src="js/services/role-hierarchy.service.js"></script>
   <!-- Posture service re-enabled -->
   <script src="js/services/posture.service.js"></script>
   <!-- Posture Feedback Integration Service -->

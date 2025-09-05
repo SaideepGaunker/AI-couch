@@ -8,7 +8,7 @@ from sqlalchemy import func, and_, desc
 
 from app.db.models import (
     User, InterviewSession, PerformanceMetrics, UserProgress, 
-    Question, Institution
+    Question
 )
 
 

@@ -44,7 +44,6 @@ class UserContext(BaseModel):
     role: str
     experience_level: str
     target_roles: List[str]
-    institution_id: Optional[int] = None
 
 
 class PersonalizedFeedback(BaseModel):

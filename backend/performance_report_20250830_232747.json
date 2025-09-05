@@ -1,0 +1,78 @@
+{
+  "timestamp": "2025-08-30T23:27:47.930271",
+  "table_analysis": {
+    "alembic_version": {
+      "row_count": 1,
+      "total_size": "N/A",
+      "table_size": "N/A",
+      "index_size": "N/A"
+    },
+    "interview_sessions": {
+      "row_count": 130,
+      "total_size": "N/A",
+      "table_size": "N/A",
+      "index_size": "N/A"
+    },
+    "learning_resources": {
+      "row_count": 24,
+      "total_size": "N/A",
+      "table_size": "N/A",
+      "index_size": "N/A"
+    },
+    "password_resets": {
+      "row_count": 0,
+      "total_size": "N/A",
+      "table_size": "N/A",
+      "index_size": "N/A"
+    },
+    "performance_metrics": {
+      "row_count": 142,
+      "total_size": "N/A",
+      "table_size": "N/A",
+      "index_size": "N/A"
+    },
+    "questions": {
+      "row_count": 312,
+      "total_size": "N/A",
+      "table_size": "N/A",
+      "index_size": "N/A"
+    },
+    "role_hierarchy": {
+      "row_count": 56,
+      "total_size": "N/A",
+      "table_size": "N/A",
+      "index_size": "N/A"
+    },
+    "user_progress": {
+      "row_count": 1,
+      "total_size": "N/A",
+      "table_size": "N/A",
+      "index_size": "N/A"
+    },
+    "user_recommendations": {
+      "row_count": 168,
+      "total_size": "N/A",
+      "table_size": "N/A",
+      "index_size": "N/A"
+    },
+    "user_sessions": {
+      "row_count": 50,
+      "total_size": "N/A",
+      "table_size": "N/A",
+      "index_size": "N/A"
+    },
+    "users": {
+      "row_count": 16,
+      "total_size": "N/A",
+      "table_size": "N/A",
+      "index_size": "N/A"
+    }
+  },
+  "index_usage": {},
+  "slow_queries": [],
+  "summary": {
+    "recent_sessions_7d": 27,
+    "recent_metrics_7d": 16,
+    "active_users_30d": 9
+  }
+}

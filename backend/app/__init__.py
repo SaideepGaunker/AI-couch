@@ -1,1 +1,0 @@
-# Interview Prep AI Coach Backend Application

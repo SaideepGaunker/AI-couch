@@ -8,9 +8,9 @@
         .module('interviewPrepApp')
         .controller('MainController', MainController);
 
-    MainController.$inject = ['$location', 'AuthService'];
+    MainController.$inject = ['$location', '$scope', '$rootScope', '$timeout', 'AuthService', 'ErrorHandlingService'];
 
-    function MainController($location, AuthService) {
+    function MainController($location, $scope, $rootScope, $timeout, AuthService, ErrorHandlingService) {
         var vm = this;
         
         vm.title = 'Interview Prep AI Coach';
@@ -62,10 +62,114 @@
             }
         };
         
+        // Error handling properties
+        vm.globalError = null;
+        vm.isLoading = false;
+        vm.networkStatus = 'online';
+        
+        // Error handling methods
+        vm.dismissGlobalError = dismissGlobalError;
+        vm.retryLastAction = retryLastAction;
+        vm.reportError = reportError;
+        
         // Initialize controller
         function activate() {
-            // Controller initialization logic if needed
+            setupErrorHandling();
+            checkNetworkStatus();
         }
+        
+        function setupErrorHandling() {
+            // Listen for global errors
+            $rootScope.$on('error:occurred', function(event, errorInfo) {
+                vm.globalError = errorInfo;
+                // Use $timeout to avoid $rootScope:inprog errors
+                $timeout(function() {
+                    // This will trigger a digest cycle safely
+                }, 0);
+            });
+            
+            // Listen for loading states
+            $rootScope.$on('loading:show', function(event, data) {
+                vm.isLoading = true;
+                $scope.$apply();
+            });
+            
+            $rootScope.$on('loading:hide', function(event, data) {
+                vm.isLoading = false;
+                $scope.$apply();
+            });
+            
+            // Listen for network status changes
+            $rootScope.$on('network:online', function() {
+                vm.networkStatus = 'online';
+                $rootScope.$broadcast('success:occurred', {
+                    message: 'Connection restored'
+                });
+                $scope.$apply();
+            });
+            
+            $rootScope.$on('network:offline', function() {
+                vm.networkStatus = 'offline';
+                $rootScope.$broadcast('warning:occurred', {
+                    message: 'Connection lost. Some features may not work.'
+                });
+                $scope.$apply();
+            });
+            
+            // Listen for feature disabled events
+            $rootScope.$on('feature:disabled', function(event, data) {
+                $rootScope.$broadcast('warning:occurred', {
+                    message: 'Feature "' + data.feature + '" is temporarily unavailable: ' + data.reason
+                });
+            });
+            
+            // Listen for feature enabled events
+            $rootScope.$on('feature:enabled', function(event, data) {
+                $rootScope.$broadcast('info:occurred', {
+                    message: 'Feature "' + data.feature + '" is now available'
+                });
+            });
+        }
+        
+        function checkNetworkStatus() {
+            vm.networkStatus = navigator.onLine ? 'online' : 'offline';
+        }
+        
+        function dismissGlobalError() {
+            vm.globalError = null;
+        }
+        
+        function retryLastAction() {
+            if (vm.globalError && vm.globalError.retryAction) {
+                vm.globalError.retryAction();
+                vm.globalError = null;
+            } else {
+                // Default retry action
+                window.location.reload();
+            }
+        }
+        
+        function reportError() {
+            if (vm.globalError) {
+                // In a real app, this would send error report to backend
+                console.log('Error report:', vm.globalError);
+                
+                $rootScope.$broadcast('info:occurred', {
+                    message: 'Error report sent. Thank you for helping us improve!'
+                });
+                
+                vm.globalError = null;
+            }
+        }
+        
+        // Expose error handling service methods
+        vm.getErrorStats = function() {
+            return ErrorHandlingService.getErrorStats();
+        };
+        
+        vm.isFeatureEnabled = function(featureName) {
+            return ErrorHandlingService.isFeatureEnabled(featureName);
+        };
         
         activate();
     }

@@ -8,20 +8,30 @@
         .module('interviewPrepApp')
         .controller('InterviewSetupController', InterviewSetupController);
 
-    InterviewSetupController.$inject = ['$location', '$timeout', 'AuthService', 'InterviewService'];
+    InterviewSetupController.$inject = ['$location', '$timeout', 'AuthService', 'InterviewService', 'DifficultyDisplayService', 'SessionSettingsService'];
 
-    function InterviewSetupController($location, $timeout, AuthService, InterviewService) {
+    function InterviewSetupController($location, $timeout, AuthService, InterviewService, DifficultyDisplayService, SessionSettingsService) {
         var vm = this;
 
         // Properties
         vm.config = {
-            target_role: 'Marketing Manager',
+            target_role: null, // Will be set based on selectedRole
+            selectedRole: null, // New hierarchical role data
             session_type: 'mixed',
-            difficulty: 'intermediate',
+            difficulty: 'medium', // Fixed to match backend levels (easy, medium, hard)
             duration: 30,
             question_count: 5,
             enable_video: true,
             enable_audio: true
+        };
+        
+        // UI state
+        vm.showLegacyRoleSelector = false;
+        vm.showQuickTestInfo = false;
+        vm.quickTestSettings = {
+            question_count: 3,
+            question_count_source: 'default',
+            distribution_summary: null
         };
         
         vm.loading = false;
@@ -30,6 +40,11 @@
         vm.cameraReady = false;
         vm.cameraActive = false;
         vm.mediaStream = null;
+        
+        // Difficulty information
+        vm.currentDifficulty = null;
+        vm.recommendedDifficulty = null;
+        vm.difficultyReason = null;
 
         // Methods
         vm.startInterview = startInterview;
@@ -37,12 +52,43 @@
         vm.goToDashboard = goToDashboard;
         vm.startCamera = startCamera;
         vm.stopCamera = stopCamera;
+        vm.onRoleChange = onRoleChange;
+        vm.customizeQuickTest = customizeQuickTest;
+        vm.loadQuickTestSettings = loadQuickTestSettings;
+        vm.applyCustomSettings = applyCustomSettings;
+        vm.loadPracticeSessionSettings = loadPracticeSessionSettings;
 
         // Initialize
         activate();
 
         function activate() {
             console.log('Interview Setup activated');
+            
+            // Initialize with safe defaults to prevent template errors
+            vm.config = vm.config || {
+                target_role: null,
+                selectedRole: null,
+                session_type: 'mixed',
+                difficulty: 'medium',
+                duration: 30,
+                question_count: 5,
+                enable_video: true,
+                enable_audio: true
+            };
+            
+            // Check if this is a practice session
+            var searchParams = $location.search();
+            if (searchParams.practiceSession && searchParams.mode === 'practice_again') {
+                vm.isPracticeSession = true;
+                vm.originalSessionId = parseInt(searchParams.practiceSession);
+                console.log('Practice session mode detected for session:', vm.originalSessionId);
+                loadPracticeSessionSettings();
+            } else {
+                vm.isPracticeSession = false;
+                loadDifficultyRecommendation();
+            }
+            
+            loadQuickTestSettings();
             
             // Auto-start camera preview
             $timeout(function() {
@@ -58,48 +104,124 @@
             vm.loading = true;
             vm.error = '';
 
-            console.log('Starting interview with config:', vm.config);
-
-            InterviewService.startSession(vm.config)
-                .then(function(response) {
-                    console.log('Interview session started:', response);
-                    console.log('Questions received:', response.questions);
-                    if (response.questions && response.questions.length > 0) {
-                        console.log('First question:', response.questions[0]);
-                        console.log('Question fields:', Object.keys(response.questions[0]));
-                    }
-                    // Navigate to chat interface with session data
-                    $location.path('/interview-chat').search({
-                        sessionId: response.session_id || response.session.id,
-                        sessionData: JSON.stringify(response)
+            // Check if this is a practice session
+            if (vm.isPracticeSession && vm.originalSessionId) {
+                console.log('Starting practice session for original session:', vm.originalSessionId);
+                
+                InterviewService.practiceAgain(vm.originalSessionId)
+                    .then(function(response) {
+                        console.log('Practice session created:', response);
+                        // Navigate to chat interface with session data
+                        $location.path('/interview-chat').search({
+                            sessionId: response.session_id || response.session.id,
+                            sessionData: JSON.stringify(response)
+                        });
+                    })
+                    .catch(function(error) {
+                        console.error('Practice session error:', error);
+                        vm.error = error.data?.detail || 'Failed to start practice session.';
+                    })
+                    .finally(function() {
+                        vm.loading = false;
                     });
-                })
-                .catch(function(error) {
-                    console.error('Interview session error:', error);
-                    vm.error = error.data?.detail || 'Failed to start interview session.';
-                })
-                .finally(function() {
-                    vm.loading = false;
-                });
+            } else {
+                // Regular new session
+                // Prepare config with hierarchical role data
+                var sessionConfig = angular.copy(vm.config);
+                
+                // Add hierarchical role data if available
+                if (vm.config.selectedRole && vm.config.selectedRole.mainRole) {
+                    sessionConfig.hierarchical_role = {
+                        main_role: vm.config.selectedRole.mainRole,
+                        sub_role: vm.config.selectedRole.subRole,
+                        specialization: vm.config.selectedRole.specialization,
+                        tech_stack: vm.config.selectedRole.techStack
+                    };
+                }
+
+                console.log('Starting new interview with config:', sessionConfig);
+
+                InterviewService.startSession(sessionConfig)
+                    .then(function(response) {
+                        console.log('Interview session started:', response);
+                        console.log('Questions received:', response.questions);
+                        if (response.questions && response.questions.length > 0) {
+                            console.log('First question:', response.questions[0]);
+                            console.log('Question fields:', Object.keys(response.questions[0]));
+                        }
+                        // Navigate to chat interface with session data
+                        $location.path('/interview-chat').search({
+                            sessionId: response.session_id || response.session.id,
+                            sessionData: JSON.stringify(response)
+                        });
+                    })
+                    .catch(function(error) {
+                        console.error('Interview session error:', error);
+                        vm.error = error.data?.detail || 'Failed to start interview session.';
+                    })
+                    .finally(function() {
+                        vm.loading = false;
+                    });
+            }
         }
 
         function startTest() {
             vm.loading = true;
             vm.error = '';
 
-            var testConfig = {
-                target_role: 'Product Manager',
-                session_type: 'technical',
-                difficulty: 'advanced',
-                duration: 15,
-                question_count: 3
-            };
+            // Prepare override settings for quick test
+            var overrideSettings = {};
+            
+            // Apply custom settings if user has customized
+            if (vm.customOverrideSettings) {
+                overrideSettings = angular.copy(vm.customOverrideSettings);
+            }
+            
+            // Only override if user has explicitly changed from defaults
+            if (vm.config.target_role && vm.config.target_role !== 'General') {
+                overrideSettings.target_role = vm.config.target_role;
+            }
+            
+            // Add hierarchical role data if available
+            if (vm.config.selectedRole && vm.config.selectedRole.mainRole) {
+                overrideSettings.hierarchical_role = {
+                    main_role: vm.config.selectedRole.mainRole,
+                    sub_role: vm.config.selectedRole.subRole,
+                    specialization: vm.config.selectedRole.specialization,
+                    tech_stack: vm.config.selectedRole.techStack
+                };
+                overrideSettings.target_role = vm.config.selectedRole.displayName || vm.config.selectedRole.mainRole;
+            }
 
-            console.log('Starting test session with config:', testConfig);
+            console.log('Starting quick test with override settings:', overrideSettings);
 
-            InterviewService.startTestSession(testConfig)
+            // Use SessionSettingsService for proper inheritance
+            SessionSettingsService.createQuickTestSession(Object.keys(overrideSettings).length > 0 ? overrideSettings : null)
                 .then(function(response) {
-                    console.log('Test session started:', response);
+                    console.log('Quick test session created:', response);
+                    
+                    // Show inheritance information to user
+                    if (response.settings_info) {
+                        var settingsInfo = response.settings_info;
+                        var message = '';
+                        
+                        if (settingsInfo.question_count_source === 'inherited') {
+                            message = 'Using your preferred question count (' + settingsInfo.question_count + ') from previous sessions.';
+                        } else if (settingsInfo.question_count_source === 'user_override') {
+                            message = 'Using your custom settings for this quick test.';
+                        } else {
+                            message = 'Using default settings for your first quick test (' + settingsInfo.question_count + ' questions).';
+                        }
+                        
+                        // Show distribution information
+                        if (response.question_distribution && response.question_distribution.summary) {
+                            message += ' Question types: ' + response.question_distribution.summary;
+                        }
+                        
+                        console.log('Quick test settings:', message);
+                        // Could show this in a toast notification
+                    }
+                    
                     // Navigate to test interface
                     $location.path('/test').search({
                         sessionId: response.session_id || response.session.id,
@@ -107,8 +229,8 @@
                     });
                 })
                 .catch(function(error) {
-                    console.error('Test session error:', error);
-                    vm.error = error.data?.detail || 'Failed to start test session.';
+                    console.error('Quick test session error:', error);
+                    vm.error = error.data?.detail || 'Failed to start quick test session.';
                 })
                 .finally(function() {
                     vm.loading = false;
@@ -120,8 +242,29 @@
             $location.path('/dashboard');
         }
 
+        function onRoleChange(role) {
+            console.log('Role changed:', role);
+            vm.config.selectedRole = role;
+            
+            // Update target_role for backward compatibility
+            if (role && role.displayName) {
+                vm.config.target_role = role.displayName;
+            } else if (role && role.mainRole) {
+                vm.config.target_role = role.mainRole;
+            }
+            
+            // Clear any previous errors
+            if (vm.error && vm.error.includes('role')) {
+                vm.error = '';
+            }
+        }
+
         function validateConfig() {
-            if (!vm.config.target_role || !vm.config.session_type || 
+            // Check if we have either hierarchical role or legacy role
+            var hasRole = (vm.config.selectedRole && vm.config.selectedRole.mainRole) || 
+                         vm.config.target_role;
+            
+            if (!hasRole || !vm.config.session_type || 
                 !vm.config.difficulty || !vm.config.duration || !vm.config.question_count) {
                 vm.error = 'Please fill in all required fields.';
                 return false;
@@ -201,6 +344,206 @@
             } catch (error) {
                 console.error('Error stopping camera:', error);
             }
+        }
+
+        function loadDifficultyRecommendation() {
+            // Load user's difficulty statistics to provide recommendations
+            InterviewService.getDifficultyStatistics()
+                .then(function(response) {
+                    console.log('Difficulty statistics loaded:', response);
+                    
+                    if (response && response.data) {
+                        // Use consistent difficulty labels
+                        vm.currentDifficulty = DifficultyDisplayService.getDifficultyLabel(
+                            DifficultyDisplayService.normalizeDifficultyInput(response.data.current_difficulty)
+                        );
+                        vm.recommendedDifficulty = DifficultyDisplayService.getDifficultyLabel(
+                            DifficultyDisplayService.normalizeDifficultyInput(response.data.next_difficulty)
+                        );
+                        
+                        // Set the recommended difficulty as default (convert to string level for form)
+                        if (response.data.next_difficulty) {
+                            var recommendedStringLevel = DifficultyDisplayService.getStringLevel(
+                                DifficultyDisplayService.normalizeDifficultyInput(response.data.next_difficulty)
+                            );
+                            vm.config.difficulty = recommendedStringLevel;
+                            console.log('Set recommended difficulty:', recommendedStringLevel);
+                        }
+                        
+                        // Generate reason for recommendation using consistent labels
+                        if (vm.currentDifficulty && vm.recommendedDifficulty) {
+                            if (vm.currentDifficulty === vm.recommendedDifficulty) {
+                                vm.difficultyReason = 'Based on your consistent performance';
+                            } else {
+                                var currentLevel = DifficultyDisplayService.normalizeDifficultyInput(response.data.current_difficulty);
+                                var nextLevel = DifficultyDisplayService.normalizeDifficultyInput(response.data.next_difficulty);
+                                
+                                if (nextLevel > currentLevel) {
+                                    vm.difficultyReason = 'You\'re ready for a challenge!';
+                                } else if (nextLevel < currentLevel) {
+                                    vm.difficultyReason = 'Let\'s build your confidence';
+                                }
+                            }
+                        }
+                    }
+                })
+                .catch(function(error) {
+                    console.log('Could not load difficulty statistics:', error);
+                    // Don't show error to user, just use defaults
+                });
+        }
+
+        function loadQuickTestSettings() {
+            // Load user's last main session to show what settings will be inherited
+            SessionSettingsService.getUserLastMainSession()
+                .then(function(lastSession) {
+                    if (lastSession) {
+                        // Estimate question count from last session
+                        var questionCount = lastSession.question_count || 
+                                          (lastSession.duration <= 15 ? 3 : 
+                                           lastSession.duration <= 30 ? 5 : 
+                                           lastSession.duration <= 45 ? 8 : 10);
+                        
+                        vm.quickTestSettings = {
+                            question_count: questionCount,
+                            question_count_source: 'inherited',
+                            distribution_summary: 'Theory: 20%, Coding: 40%, Aptitude: 40%',
+                            inherited_from_session_id: lastSession.id,
+                            last_session_role: lastSession.target_role,
+                            last_session_difficulty: lastSession.difficulty_level
+                        };
+                        
+                        console.log('Quick test will inherit settings from session:', lastSession.id);
+                    } else {
+                        // No previous sessions - use defaults
+                        vm.quickTestSettings = {
+                            question_count: 3,
+                            question_count_source: 'default',
+                            distribution_summary: 'Theory: 1, Coding: 1, Aptitude: 1'
+                        };
+                        
+                        console.log('No previous sessions found, using defaults');
+                    }
+                })
+                .catch(function(error) {
+                    console.log('Could not load last session for quick test settings:', error);
+                    // Use defaults
+                    vm.quickTestSettings = {
+                        question_count: 3,
+                        question_count_source: 'default',
+                        distribution_summary: 'Theory: 1, Coding: 1, Aptitude: 1'
+                    };
+                });
+        }
+
+        function customizeQuickTest() {
+            // Show modal or expand form to allow customization
+            // For now, just toggle to show that customization is available
+            vm.showQuickTestCustomization = !vm.showQuickTestCustomization;
+            
+            if (vm.showQuickTestCustomization) {
+                // Initialize customization form with current settings
+                vm.customQuickTestSettings = {
+                    question_count: vm.quickTestSettings.question_count,
+                    target_role: vm.config.target_role,
+                    difficulty: vm.config.difficulty || 'medium'
+                };
+            }
+        }
+
+        function applyCustomSettings() {
+            // Update quick test settings with custom values
+            vm.quickTestSettings.question_count = vm.customQuickTestSettings.question_count;
+            vm.quickTestSettings.question_count_source = 'user_override';
+            
+            // Update distribution summary based on new question count
+            var count = parseInt(vm.customQuickTestSettings.question_count);
+            if (count === 3) {
+                vm.quickTestSettings.distribution_summary = 'Theory: 1, Coding: 1, Aptitude: 1';
+            } else if (count === 5) {
+                vm.quickTestSettings.distribution_summary = 'Theory: 1, Coding: 2, Aptitude: 2';
+            } else if (count === 7) {
+                vm.quickTestSettings.distribution_summary = 'Theory: 1, Coding: 3, Aptitude: 3';
+            } else if (count === 10) {
+                vm.quickTestSettings.distribution_summary = 'Theory: 2, Coding: 4, Aptitude: 4';
+            }
+            
+            // Store custom settings for use in startTest
+            vm.customOverrideSettings = {
+                question_count: vm.customQuickTestSettings.question_count,
+                difficulty: vm.customQuickTestSettings.difficulty
+            };
+            
+            vm.showQuickTestCustomization = false;
+            console.log('Applied custom quick test settings:', vm.customOverrideSettings);
+        }
+
+        function loadPracticeSessionSettings() {
+            console.log('Loading practice session settings for session:', vm.originalSessionId);
+            
+            // Load the original session details and difficulty recommendation
+            InterviewService.getSession(vm.originalSessionId)
+                .then(function(response) {
+                    if (response && response.data) {
+                        var originalSession = response.data;
+                        console.log('Original session loaded:', originalSession);
+                        
+                        // Pre-fill form with original session settings
+                        vm.config.target_role = originalSession.target_role;
+                        vm.config.session_type = originalSession.session_type;
+                        vm.config.duration = originalSession.duration;
+                        vm.config.question_count = originalSession.question_count;
+                        
+                        // Show original difficulty
+                        vm.originalDifficulty = DifficultyDisplayService.getDifficultyLabel(
+                            DifficultyDisplayService.normalizeDifficultyInput(originalSession.difficulty_level)
+                        );
+                        
+                        // Load adaptive difficulty recommendation
+                        return InterviewService.getDifficultyStatistics();
+                    }
+                })
+                .then(function(statsResponse) {
+                    if (statsResponse && statsResponse.data) {
+                        console.log('Difficulty statistics loaded for practice session:', statsResponse);
+                        
+                        // Set recommended difficulty as default
+                        vm.recommendedDifficulty = DifficultyDisplayService.getDifficultyLabel(
+                            DifficultyDisplayService.normalizeDifficultyInput(statsResponse.data.next_difficulty)
+                        );
+                        
+                        // Set the recommended difficulty as default (convert to string level for form)
+                        if (statsResponse.data.next_difficulty) {
+                            var recommendedStringLevel = DifficultyDisplayService.getStringLevel(
+                                DifficultyDisplayService.normalizeDifficultyInput(statsResponse.data.next_difficulty)
+                            );
+                            vm.config.difficulty = recommendedStringLevel;
+                            console.log('Set recommended difficulty for practice session:', recommendedStringLevel);
+                        }
+                        
+                        // Generate reason for recommendation
+                        if (vm.originalDifficulty && vm.recommendedDifficulty) {
+                            if (vm.originalDifficulty === vm.recommendedDifficulty) {
+                                vm.difficultyReason = 'Based on your performance, we recommend continuing with the same difficulty';
+                            } else {
+                                var originalLevel = DifficultyDisplayService.normalizeDifficultyInput(vm.originalDifficulty);
+                                var nextLevel = DifficultyDisplayService.normalizeDifficultyInput(statsResponse.data.next_difficulty);
+                                
+                                if (nextLevel > originalLevel) {
+                                    vm.difficultyReason = 'Based on your excellent performance, we recommend increasing the difficulty!';
+                                } else if (nextLevel < originalLevel) {
+                                    vm.difficultyReason = 'Based on your performance, we recommend an easier difficulty to build confidence';
+                                }
+                            }
+                        }
+                        
+                        vm.showPracticeInfo = true;
+                    }
+                })
+                .catch(function(error) {
+                    console.error('Error loading practice session settings:', error);
+                    vm.error = 'Failed to load practice session settings. Please try again.';
+                });
         }
 
         // Cleanup on destroy

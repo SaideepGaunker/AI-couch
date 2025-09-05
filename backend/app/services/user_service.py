@@ -159,17 +159,13 @@ class UserService:
         self,
         skip: int = 0,
         limit: int = 100,
-        role: Optional[str] = None,
-        institution_id: Optional[int] = None
+        role: Optional[str] = None
     ) -> List[User]:
         """Get list of users with filtering (admin only)"""
         query = self.db.query(User)
         
         if role:
             query = query.filter(User.role == role)
-        
-        if institution_id:
-            query = query.filter(User.institution_id == institution_id)
         
         return query.offset(skip).limit(limit).all()
     

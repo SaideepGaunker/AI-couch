@@ -15,23 +15,81 @@
                         {{vm.error}}
                     </div>
 
+                    <!-- Practice Session Info -->
+                    <div ng-if="vm.isPracticeSession" class="alert alert-info mb-4">
+                        <h5 class="mb-3">
+                            <i class="fas fa-redo me-2"></i>
+                            Practice Session Setup
+                        </h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p class="mb-2">
+                                    <strong>Original Session:</strong> {{vm.originalDifficulty}} difficulty
+                                </p>
+                                <p class="mb-2">
+                                    <strong>Recommended:</strong> 
+                                    <span class="badge bg-primary">{{vm.recommendedDifficulty}}</span>
+                                </p>
+                            </div>
+                            <div class="col-md-6">
+                                <p class="mb-0">
+                                    <small class="text-muted">
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        {{vm.difficultyReason}}
+                                    </small>
+                                </p>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <small class="text-muted">
+                                <i class="fas fa-lightbulb me-1"></i>
+                                We've pre-selected the recommended difficulty, but you can change it below if you prefer.
+                            </small>
+                        </div>
+                    </div>
+
                     <div class="row">
                         <!-- Left Column - Form Fields -->
                         <div class="col-md-6">
                             <form ng-submit="vm.startInterview()">
+                                <!-- Enhanced Role Selection -->
                                 <div class="mb-3">
-                                    <label for="targetRole" class="form-label fw-bold">Target Role *</label>
-                                    <select id="targetRole" class="form-select" ng-model="vm.config.target_role" required>
-                                        <option value="">Select a role...</option>
-                                        <option value="Marketing Manager">Marketing Manager</option>
-                                        <option value="Software Engineer">Software Engineer</option>
-                                        <option value="Product Manager">Product Manager</option>
-                                        <option value="Data Scientist">Data Scientist</option>
-                                        <option value="Sales Representative">Sales Representative</option>
-                                        <option value="Business Analyst">Business Analyst</option>
-                                        <option value="Project Manager">Project Manager</option>
-                                        <option value="UX Designer">UX Designer</option>
-                                    </select>
+                                    <label class="form-label fw-bold">Target Role *</label>
+                                    <role-selector 
+                                        selected-role="vm.config.selectedRole"
+                                        on-role-change="vm.onRoleChange(role)"
+                                        required="true"
+                                        show-tech-stack="true">
+                                    </role-selector>
+                                    
+                                    <!-- Backward Compatibility Fallback -->
+                                    <div ng-if="vm.showLegacyRoleSelector" class="mt-2">
+                                        <label for="targetRole" class="form-label">Or select from basic roles:</label>
+                                        <select id="targetRole" class="form-select" ng-model="vm.config.target_role">
+                                            <option value="">Select a role...</option>
+                                            <option value="Marketing Manager">Marketing Manager</option>
+                                            <option value="Software Engineer">Software Engineer</option>
+                                            <option value="Product Manager">Product Manager</option>
+                                            <option value="Data Scientist">Data Scientist</option>
+                                            <option value="Sales Representative">Sales Representative</option>
+                                            <option value="Business Analyst">Business Analyst</option>
+                                            <option value="Project Manager">Project Manager</option>
+                                            <option value="UX Designer">UX Designer</option>
+                                        </select>
+                                        <small class="text-muted">
+                                            <button type="button" class="btn btn-link btn-sm p-0" ng-click="vm.showLegacyRoleSelector = false">
+                                                Use enhanced role selector
+                                            </button>
+                                        </small>
+                                    </div>
+                                    
+                                    <div ng-if="!vm.showLegacyRoleSelector" class="mt-2">
+                                        <small class="text-muted">
+                                            <button type="button" class="btn btn-link btn-sm p-0" ng-click="vm.showLegacyRoleSelector = true">
+                                                Use simple role selector
+                                            </button>
+                                        </small>
+                                    </div>
                                 </div>
 
                                 <div class="mb-3">
@@ -47,12 +105,56 @@
 
                                 <div class="mb-3">
                                     <label for="difficultyLevel" class="form-label fw-bold">Difficulty Level</label>
+                                    
+                                    <!-- Practice Session Difficulty Info -->
+                                    <div ng-if="vm.isPracticeSession" class="alert alert-success py-2 mb-2">
+                                        <small>
+                                            <i class="fas fa-robot me-1"></i>
+                                            <strong>Adaptive Recommendation:</strong> {{ vm.recommendedDifficulty }}
+                                            <br>
+                                            <span class="text-muted">Based on your performance in the previous session</span>
+                                        </small>
+                                    </div>
+                                    
+                                    <!-- Regular Session Difficulty Recommendation -->
+                                    <div ng-if="!vm.isPracticeSession && vm.recommendedDifficulty" class="alert alert-info py-2 mb-2">
+                                        <small>
+                                            <i class="fas fa-lightbulb me-1"></i>
+                                            <strong>Recommended:</strong> {{ vm.recommendedDifficulty }} 
+                                            <span ng-if="vm.difficultyReason">({{ vm.difficultyReason }})</span>
+                                            <button type="button" class="btn btn-sm btn-outline-primary ms-2" 
+                                                    ng-click="vm.config.difficulty = vm.recommendedDifficulty">
+                                                Use Recommended
+                                            </button>
+                                        </small>
+                                    </div>
+                                    
                                     <select id="difficultyLevel" class="form-select" ng-model="vm.config.difficulty" required>
                                         <option value="">Select difficulty...</option>
-                                        <option value="beginner">Beginner</option>
-                                        <option value="intermediate">Intermediate</option>
-                                        <option value="advanced">Advanced</option>
+                                        <option value="easy">Easy</option>
+                                        <option value="medium">Medium</option>
+                                        <option value="hard">Hard</option>
+                                        <option value="expert">Expert</option>
                                     </select>
+                                    
+                                    <!-- Current Level Display for Regular Sessions -->
+                                    <div ng-if="!vm.isPracticeSession && vm.currentDifficulty" class="mt-1">
+                                        <small class="text-muted">
+                                            <i class="fas fa-flag me-1"></i>
+                                            Your current level: <span class="fw-bold">{{ vm.currentDifficulty }}</span>
+                                        </small>
+                                    </div>
+                                    
+                                    <!-- Original vs Recommended for Practice Sessions -->
+                                    <div ng-if="vm.isPracticeSession && vm.originalDifficulty" class="mt-1">
+                                        <small class="text-muted">
+                                            <i class="fas fa-history me-1"></i>
+                                            Previous session: <span class="fw-bold">{{ vm.originalDifficulty }}</span>
+                                            <span ng-if="vm.originalDifficulty !== vm.recommendedDifficulty">
+                                                → <span class="fw-bold text-primary">{{ vm.recommendedDifficulty }}</span> (recommended)
+                                            </span>
+                                        </small>
+                                    </div>
                                 </div>
 
                                 <!-- Duration and Question Count -->
@@ -67,6 +169,92 @@
                                     </div>
                                 </div>
 
+                                <!-- Quick Test Settings Info -->
+                                <div ng-if="vm.showQuickTestInfo" class="alert alert-info mb-3">
+                                    <h6 class="mb-2">
+                                        <i class="fas fa-bolt me-2"></i>
+                                        Quick Test Settings
+                                    </h6>
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <small>
+                                                <strong>Question Count:</strong> 
+                                                <span ng-if="vm.quickTestSettings.question_count_source === 'inherited'">
+                                                    {{vm.quickTestSettings.question_count}} (from your preferences)
+                                                </span>
+                                                <span ng-if="vm.quickTestSettings.question_count_source === 'default'">
+                                                    3 (default for new users)
+                                                </span>
+                                                <span ng-if="vm.quickTestSettings.question_count_source === 'user_override'">
+                                                    {{vm.quickTestSettings.question_count}} (custom)
+                                                </span>
+                                            </small>
+                                        </div>
+                                        <div class="col-6">
+                                            <small>
+                                                <strong>Duration:</strong> 15 minutes (fixed)
+                                            </small>
+                                        </div>
+                                    </div>
+                                    <div class="mt-2">
+                                        <small>
+                                            <strong>Question Types:</strong> 
+                                            <span ng-if="vm.quickTestSettings.distribution_summary">
+                                                {{vm.quickTestSettings.distribution_summary}}
+                                            </span>
+                                            <span ng-if="!vm.quickTestSettings.distribution_summary">
+                                                Balanced mix of theory, coding, and aptitude questions
+                                            </span>
+                                        </small>
+                                    </div>
+                                    
+                                    <!-- Quick Test Customization Form -->
+                                    <div ng-if="vm.showQuickTestCustomization" class="mt-3 p-3 border rounded bg-light">
+                                        <h6 class="mb-3">Customize Quick Test</h6>
+                                        <div class="row">
+                                            <div class="col-4">
+                                                <label class="form-label">Question Count</label>
+                                                <select class="form-select form-select-sm" ng-model="vm.customQuickTestSettings.question_count">
+                                                    <option value="3">3 questions</option>
+                                                    <option value="5">5 questions</option>
+                                                    <option value="7">7 questions</option>
+                                                    <option value="10">10 questions</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-4">
+                                                <label class="form-label">Difficulty</label>
+                                                <select class="form-select form-select-sm" ng-model="vm.customQuickTestSettings.difficulty">
+                                                    <option value="easy">Easy</option>
+                                                    <option value="medium">Medium</option>
+                                                    <option value="hard">Hard</option>
+                                                    <option value="expert">Expert</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-4">
+                                                <label class="form-label">Actions</label>
+                                                <div>
+                                                    <button type="button" class="btn btn-sm btn-success me-1" ng-click="vm.applyCustomSettings()">
+                                                        Apply
+                                                    </button>
+                                                    <button type="button" class="btn btn-sm btn-secondary" ng-click="vm.showQuickTestCustomization = false">
+                                                        Cancel
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mt-2">
+                                        <button type="button" class="btn btn-sm btn-outline-primary" ng-click="vm.customizeQuickTest()">
+                                            <i class="fas fa-cog me-1"></i>
+                                            {{vm.showQuickTestCustomization ? 'Hide' : 'Customize'}} Settings
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-link" ng-click="vm.showQuickTestInfo = false">
+                                            Hide Details
+                                        </button>
+                                    </div>
+                                </div>
+
                                 <!-- Action Buttons -->
                                 <div class="d-flex gap-2 mb-3">
                                     <button type="button" class="btn btn-secondary" ng-click="vm.goToDashboard()">
@@ -76,15 +264,20 @@
                                     <button type="button" class="btn btn-success" ng-click="vm.startTest()">
                                         <i class="fas fa-play me-2"></i>
                                         Quick Test
+                                        <span ng-if="!vm.showQuickTestInfo" class="ms-1">
+                                            <i class="fas fa-info-circle" ng-click="vm.showQuickTestInfo = true; $event.stopPropagation()"></i>
+                                        </span>
                                     </button>
                                     <button type="submit" class="btn btn-primary" ng-disabled="vm.loading || !vm.cameraReady">
                                         <span ng-if="vm.loading">
                                             <i class="fas fa-spinner fa-spin me-2"></i>
-                                            Starting...
+                                            <span ng-if="vm.isPracticeSession">Starting Practice...</span>
+                                            <span ng-if="!vm.isPracticeSession">Starting...</span>
                                         </span>
                                         <span ng-if="!vm.loading">
                                             <i class="fas fa-video me-2"></i>
-                                            Start Interview
+                                            <span ng-if="vm.isPracticeSession">Start Practice Session</span>
+                                            <span ng-if="!vm.isPracticeSession">Start Interview</span>
                                         </span>
                                     </button>
                                 </div>

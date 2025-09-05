@@ -8,9 +8,9 @@
         .module('interviewPrepApp')
         .controller('ProfileController', ProfileController);
 
-    ProfileController.$inject = ['$location', 'AuthService', 'UserService'];
+    ProfileController.$inject = ['$location', 'AuthService', 'UserService', 'RoleHierarchyService'];
 
-    function ProfileController($location, AuthService, UserService) {
+    function ProfileController($location, AuthService, UserService, RoleHierarchyService) {
         var vm = this;
 
         // Properties
@@ -25,8 +25,12 @@
             name: vm.user.name || '',
             email: vm.user.email || '',
             experience_level: vm.user.experience_level || '',
-            target_roles: vm.user.target_roles || []
+            target_roles: vm.user.target_roles || [],
+            primaryRole: vm.user.primary_role || null // New hierarchical role
         };
+        
+        // UI state
+        vm.showAdditionalRoles = false;
 
         // Password form
         vm.passwordForm = {
@@ -43,27 +47,19 @@
             { value: 'expert', label: 'Expert (10+ years)' }
         ];
 
-        vm.availableRoles = [
-            'Software Developer',
-            'Data Scientist',
-            'Product Manager',
-            'Marketing Manager',
-            'Sales Representative',
-            'Business Analyst',
-            'UI/UX Designer',
-            'DevOps Engineer',
-            'Project Manager',
-            'Consultant'
-        ];
+        vm.availableRoles = [];
+        vm.loadingRoles = false;
 
         // Methods
         vm.setActiveTab = setActiveTab;
         vm.updateProfile = updateProfile;
         vm.changePassword = changePassword;
         vm.toggleTargetRole = toggleTargetRole;
+        vm.onPrimaryRoleChange = onPrimaryRoleChange;
         vm.exportData = exportData;
         vm.deleteAccount = deleteAccount;
         vm.logout = logout;
+        vm.loadAvailableRoles = loadAvailableRoles;
 
         // Initialize
         activate();
@@ -73,12 +69,48 @@
                 $location.path('/login');
                 return;
             }
+            
+            // Load available roles from API
+            loadAvailableRoles();
+        }
+
+        function loadAvailableRoles() {
+            vm.loadingRoles = true;
+            
+            RoleHierarchyService.getMainRoles()
+                .then(function(roles) {
+                    vm.availableRoles = roles;
+                })
+                .catch(function(error) {
+                    console.error('Error loading roles:', error);
+                    // Fallback to basic roles if API fails
+                    vm.availableRoles = [
+                        'Software Developer',
+                        'Data Scientist', 
+                        'Product Manager',
+                        'DevOps Engineer',
+                        'UX/UI Designer'
+                    ];
+                })
+                .finally(function() {
+                    vm.loadingRoles = false;
+                });
         }
 
         function setActiveTab(tab) {
             vm.activeTab = tab;
             vm.error = '';
             vm.success = '';
+        }
+
+        function onPrimaryRoleChange(role) {
+            console.log('Primary role changed:', role);
+            vm.profileForm.primaryRole = role;
+            
+            // Clear any previous errors
+            if (vm.error && vm.error.includes('role')) {
+                vm.error = '';
+            }
         }
 
         function updateProfile() {
@@ -101,7 +133,23 @@
                 return;
             }
 
-            UserService.updateProfile(vm.profileForm)
+            // Prepare profile data with hierarchical role structure
+            var profileData = angular.copy(vm.profileForm);
+            
+            // If primaryRole is hierarchical, update the role data structure
+            if (profileData.primaryRole && typeof profileData.primaryRole === 'object') {
+                profileData.hierarchical_role = {
+                    main_role: profileData.primaryRole.mainRole,
+                    sub_role: profileData.primaryRole.subRole,
+                    specialization: profileData.primaryRole.specialization,
+                    tech_stack: profileData.primaryRole.techStack
+                };
+                
+                // Keep backward compatibility
+                profileData.primary_role = profileData.primaryRole.displayName || profileData.primaryRole.mainRole;
+            }
+
+            UserService.updateProfile(profileData)
                 .then(function(response) {
                     vm.success = 'Profile updated successfully!';
                     // Update user data in AuthService

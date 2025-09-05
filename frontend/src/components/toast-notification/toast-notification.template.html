@@ -1,0 +1,294 @@
+<!-- Toast Notification Template -->
+<div class="toast-container" ng-if="$ctrl.toasts.length > 0">
+    <div ng-repeat="toast in $ctrl.toasts track by toast.id" 
+         class="toast toast-{{toast.type}}"
+         ng-class="{'toast-visible': toast.visible, 'toast-hidden': !toast.visible}">
+        
+        <!-- Toast Header -->
+        <div class="toast-header">
+            <div class="toast-icon">
+                <i ng-if="toast.type === 'success'" class="fas fa-check-circle"></i>
+                <i ng-if="toast.type === 'error'" class="fas fa-exclamation-circle"></i>
+                <i ng-if="toast.type === 'warning'" class="fas fa-exclamation-triangle"></i>
+                <i ng-if="toast.type === 'info'" class="fas fa-info-circle"></i>
+            </div>
+            
+            <div class="toast-title">
+                <span ng-if="toast.type === 'success'">Success</span>
+                <span ng-if="toast.type === 'error'">Error</span>
+                <span ng-if="toast.type === 'warning'">Warning</span>
+                <span ng-if="toast.type === 'info'">Information</span>
+            </div>
+            
+            <button ng-if="toast.dismissible" 
+                    class="toast-close" 
+                    ng-click="$ctrl.dismissToast(toast.id)"
+                    aria-label="Close notification">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <!-- Toast Body -->
+        <div class="toast-body">
+            <div class="toast-message">{{toast.message}}</div>
+            
+            <!-- Recovery Suggestions -->
+            <div ng-if="toast.suggestions.length > 0" class="toast-suggestions">
+                <div class="suggestions-title">Try these solutions:</div>
+                <ul class="suggestions-list">
+                    <li ng-repeat="suggestion in toast.suggestions">{{suggestion}}</li>
+                </ul>
+            </div>
+        </div>
+        
+        <!-- Toast Actions -->
+        <div ng-if="toast.showRetry || toast.suggestions.length > 0" class="toast-actions">
+            <button ng-if="toast.showRetry" 
+                    class="btn btn-sm btn-outline-primary toast-retry-btn"
+                    ng-click="$ctrl.retryAction(toast)">
+                <i class="fas fa-redo"></i> Retry
+            </button>
+            
+            <button class="btn btn-sm btn-outline-secondary toast-dismiss-btn"
+                    ng-click="$ctrl.dismissToast(toast.id)">
+                Dismiss
+            </button>
+        </div>
+        
+        <!-- Progress Bar for Auto-dismiss -->
+        <div ng-if="toast.duration > 0" class="toast-progress">
+            <div class="toast-progress-bar" 
+                 ng-style="{'animation-duration': toast.duration + 'ms'}"></div>
+        </div>
+    </div>
+    
+    <!-- Dismiss All Button (disabled for debug) -->
+    <div ng-if="false" class="toast-controls">
+        <button class="btn btn-sm btn-outline-secondary" 
+                ng-click="$ctrl.dismissAllToasts()">
+            <i class="fas fa-times"></i> Dismiss All
+        </button>
+    </div>
+</div>
+
+<style>
+/* Toast Container */
+.toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    max-width: 400px;
+    width: 100%;
+}
+
+/* Toast Base Styles */
+.toast {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    margin-bottom: 10px;
+    overflow: hidden;
+    transform: translateX(100%);
+    transition: all 0.3s ease-in-out;
+    border-left: 4px solid;
+}
+
+.toast-visible {
+    transform: translateX(0);
+}
+
+.toast-hidden {
+    transform: translateX(100%);
+    opacity: 0;
+}
+
+/* Toast Type Colors */
+.toast-success {
+    border-left-color: #28a745;
+}
+
+.toast-error {
+    border-left-color: #dc3545;
+}
+
+.toast-warning {
+    border-left-color: #ffc107;
+}
+
+.toast-info {
+    border-left-color: #17a2b8;
+}
+
+/* Toast Header */
+.toast-header {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px 8px;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.toast-icon {
+    margin-right: 8px;
+    font-size: 18px;
+}
+
+.toast-success .toast-icon {
+    color: #28a745;
+}
+
+.toast-error .toast-icon {
+    color: #dc3545;
+}
+
+.toast-warning .toast-icon {
+    color: #ffc107;
+}
+
+.toast-info .toast-icon {
+    color: #17a2b8;
+}
+
+.toast-title {
+    flex: 1;
+    font-weight: 600;
+    font-size: 14px;
+    color: #495057;
+}
+
+.toast-close {
+    background: none;
+    border: none;
+    color: #6c757d;
+    cursor: pointer;
+    font-size: 16px;
+    padding: 0;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.toast-close:hover {
+    color: #495057;
+}
+
+/* Toast Body */
+.toast-body {
+    padding: 8px 16px 12px;
+}
+
+.toast-message {
+    font-size: 14px;
+    color: #495057;
+    line-height: 1.4;
+    margin-bottom: 8px;
+}
+
+/* Suggestions */
+.toast-suggestions {
+    margin-top: 8px;
+}
+
+.suggestions-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: #6c757d;
+    margin-bottom: 4px;
+}
+
+.suggestions-list {
+    margin: 0;
+    padding-left: 16px;
+    font-size: 12px;
+    color: #6c757d;
+}
+
+.suggestions-list li {
+    margin-bottom: 2px;
+}
+
+/* Toast Actions */
+.toast-actions {
+    padding: 8px 16px 12px;
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    border-top: 1px solid #e9ecef;
+}
+
+.toast-retry-btn,
+.toast-dismiss-btn {
+    font-size: 12px;
+    padding: 4px 12px;
+}
+
+/* Progress Bar */
+.toast-progress {
+    height: 3px;
+    background: #e9ecef;
+    overflow: hidden;
+}
+
+.toast-progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #007bff, #0056b3);
+    width: 100%;
+    animation: toast-progress-animation linear forwards;
+}
+
+@keyframes toast-progress-animation {
+    from {
+        width: 100%;
+    }
+    to {
+        width: 0%;
+    }
+}
+
+/* Toast Controls */
+.toast-controls {
+    text-align: center;
+    margin-top: 10px;
+}
+
+/* Responsive Design */
+@media (max-width: 480px) {
+    .toast-container {
+        left: 10px;
+        right: 10px;
+        top: 10px;
+        max-width: none;
+    }
+    
+    .toast {
+        margin-bottom: 8px;
+    }
+    
+    .toast-header,
+    .toast-body,
+    .toast-actions {
+        padding-left: 12px;
+        padding-right: 12px;
+    }
+}
+
+/* Animation for multiple toasts */
+.toast:nth-child(n+2) {
+    margin-top: -2px;
+    transform: translateX(100%) scale(0.95);
+}
+
+.toast-visible:nth-child(n+2) {
+    transform: translateX(0) scale(0.95);
+}
+
+.toast:nth-child(n+3) {
+    transform: translateX(100%) scale(0.9);
+}
+
+.toast-visible:nth-child(n+3) {
+    transform: translateX(0) scale(0.9);
+}
+</style>

@@ -31,6 +31,9 @@
             .when('/interview-chat', {
                 template: '<interview-chat-component></interview-chat-component>'
             })
+            .when('/interview-chat/:sessionId', {
+                template: '<interview-chat-component></interview-chat-component>'
+            })
             .when('/test', {
                 template: '<test-component></test-component>'
             })
@@ -42,6 +45,30 @@
             })
             .when('/feedback/:sessionId', {
                 template: '<feedback-component></feedback-component>'
+            })
+            .when('/practice/:parentSessionId', {
+                template: '<div class="container mt-4"><div class="text-center"><i class="fas fa-spinner fa-spin fa-2x"></i><p class="mt-2">Creating practice session...</p></div></div>',
+                controller: ['$routeParams', '$location', 'UnifiedDifficultyStateService', function($routeParams, $location, UnifiedDifficultyStateService) {
+                    var parentSessionId = parseInt($routeParams.parentSessionId);
+                    
+                    if (!parentSessionId) {
+                        $location.path('/dashboard');
+                        return;
+                    }
+                    
+                    // Create practice session using UnifiedDifficultyStateService
+                    UnifiedDifficultyStateService.createPracticeSessionWithDifficulty(parentSessionId, {
+                        showLoading: false, // We're showing our own loading
+                        showSuccess: true
+                    })
+                    .then(function(response) {
+                        $location.path('/interview-chat/' + response.session.id);
+                    })
+                    .catch(function(error) {
+                        console.error('Error creating practice session from route:', error);
+                        $location.path('/dashboard');
+                    });
+                }]
             })
             .when('/debug', {
                 template: '<div class="container mt-4"><h2>Debug Page</h2><div class="card"><div class="card-body"><h5>Authentication Status</h5><p><strong>Authenticated:</strong> {{isAuth}}</p><p><strong>Access Token:</strong> {{token ? "Present" : "Missing"}}</p><p><strong>User Data:</strong> {{user ? user.email : "Missing"}}</p><button class="btn btn-primary me-2" onclick="window.mockLogin()">Mock Login</button><button class="btn btn-secondary me-2" onclick="window.clearAuth()">Clear Auth</button><button class="btn btn-info" onclick="window.debugAuth()">Debug Auth</button></div></div></div>',
@@ -129,6 +156,44 @@
         
         // Make debug function available globally
         window.debugAuth = $rootScope.debugAuth;
+        
+        // Global error handling
+        $rootScope.$on('$routeChangeError', function(event, current, previous, rejection) {
+            console.error('Route change error:', rejection);
+            $rootScope.$broadcast('error:occurred', {
+                userFriendlyMessage: 'Navigation error occurred. Please try again.',
+                recoverySuggestions: ['Refresh the page', 'Go back and try again'],
+                context: { type: 'route_error', rejection: rejection }
+            });
+        });
+        
+        // Handle uncaught exceptions
+        window.addEventListener('error', function(event) {
+            console.error('Uncaught error:', event.error);
+            $rootScope.$broadcast('error:occurred', {
+                userFriendlyMessage: 'An unexpected error occurred.',
+                recoverySuggestions: ['Refresh the page', 'Contact support if problem persists'],
+                context: { 
+                    type: 'uncaught_error', 
+                    message: event.message,
+                    filename: event.filename,
+                    lineno: event.lineno
+                }
+            });
+        });
+        
+        // Handle unhandled promise rejections
+        window.addEventListener('unhandledrejection', function(event) {
+            console.error('Unhandled promise rejection:', event.reason);
+            $rootScope.$broadcast('error:occurred', {
+                userFriendlyMessage: 'A background operation failed.',
+                recoverySuggestions: ['Try the action again', 'Refresh the page'],
+                context: { 
+                    type: 'unhandled_promise_rejection', 
+                    reason: event.reason 
+                }
+            });
+        });
         
         // Development helper: Mock login function
         window.mockLogin = function() {

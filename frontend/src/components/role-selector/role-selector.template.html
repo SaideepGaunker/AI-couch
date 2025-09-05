@@ -1,0 +1,192 @@
+<!-- Role Selector Component Template -->
+<div class="role-selector" ng-class="{'disabled': vm.disabled}">
+    <!-- Loading State -->
+    <div ng-if="vm.loading" class="role-selector__loading">
+        <div class="spinner"></div>
+        <span>Loading role options...</span>
+    </div>
+
+    <!-- Error State -->
+    <div ng-if="vm.error" class="role-selector__error alert alert-warning">
+        <i class="fas fa-exclamation-triangle"></i>
+        {{ vm.error }}
+    </div>
+
+    <!-- Role Selection Form -->
+    <div ng-if="!vm.loading" class="role-selector__form">
+        
+        <!-- Main Role Selection -->
+        <div class="form-group">
+            <label for="mainRole" class="form-label">
+                Main Role
+                <span ng-if="vm.required" class="required">*</span>
+            </label>
+            <select 
+                id="mainRole"
+                class="form-control"
+                ng-class="{'is-invalid': vm.hasFieldError('mainRole')}"
+                ng-model="vm.selectedMainRole"
+                ng-change="vm.onMainRoleChange()"
+                ng-disabled="vm.disabled"
+                ng-required="vm.required">
+                <option value="">Select a main role...</option>
+                <option ng-repeat="role in vm.mainRoles" value="{{ role }}">
+                    {{ role }}
+                </option>
+            </select>
+            <form-error-display 
+              errors="vm.fieldErrors" 
+              field-name="mainRole" 
+              error-type="field">
+            </form-error-display>
+        </div>
+
+        <!-- Sub Role Selection -->
+        <div class="form-group" ng-if="vm.isMainRoleSelected()">
+            <label for="subRole" class="form-label">
+                Sub Role
+                <span ng-if="vm.required" class="required">*</span>
+                <span ng-if="vm.loadingSubRoles" class="loading-indicator">
+                    <i class="fas fa-spinner fa-spin"></i> Loading...
+                </span>
+            </label>
+            <select 
+                id="subRole"
+                class="form-control"
+                ng-class="{'is-invalid': vm.hasFieldError('subRole')}"
+                ng-model="vm.selectedSubRole"
+                ng-change="vm.onSubRoleChange()"
+                ng-disabled="vm.disabled || vm.loadingSubRoles"
+                ng-required="vm.required && vm.isMainRoleSelected()">
+                <option value="">{{ vm.loadingSubRoles ? 'Loading sub roles...' : 'Select a sub role...' }}</option>
+                <option ng-repeat="subRole in vm.subRoles" value="{{ subRole }}">
+                    {{ subRole }}
+                </option>
+            </select>
+            <form-error-display 
+              errors="vm.fieldErrors" 
+              field-name="subRole" 
+              error-type="field">
+            </form-error-display>
+        </div>
+
+        <!-- Specialization Selection -->
+        <div class="form-group" ng-if="vm.isSubRoleSelected() && (vm.hasSpecializations() || vm.loadingSpecializations)">
+            <label for="specialization" class="form-label">
+                Specialization
+                <span class="optional">(Optional)</span>
+                <span ng-if="vm.loadingSpecializations" class="loading-indicator">
+                    <i class="fas fa-spinner fa-spin"></i> Loading...
+                </span>
+            </label>
+            <select 
+                id="specialization"
+                class="form-control"
+                ng-class="{'is-invalid': vm.hasFieldError('specialization')}"
+                ng-model="vm.selectedSpecialization"
+                ng-change="vm.onSpecializationChange()"
+                ng-disabled="vm.disabled || vm.loadingSpecializations">
+                <option value="">{{ vm.loadingSpecializations ? 'Loading specializations...' : 'Select a specialization...' }}</option>
+                <option ng-repeat="spec in vm.specializations" value="{{ spec }}">
+                    {{ spec }}
+                </option>
+            </select>
+            <form-error-display 
+              errors="vm.fieldErrors" 
+              field-name="specialization" 
+              error-type="field">
+            </form-error-display>
+        </div>
+
+        <!-- Tech Stack Selection -->
+        <div class="form-group" ng-if="vm.showTechStack && vm.isSubRoleSelected() && (vm.hasTechStacks() || vm.loadingTechStacks)">
+            <label class="form-label">
+                Tech Stack
+                <span class="optional">(Optional - Select up to 3)</span>
+                <span ng-if="vm.loadingTechStacks" class="loading-indicator">
+                    <i class="fas fa-spinner fa-spin"></i> Loading...
+                </span>
+            </label>
+            <div class="tech-stack-selection">
+                <div class="tech-stack-grid">
+                    <label 
+                        ng-repeat="tech in vm.techStacks" 
+                        class="tech-stack-item"
+                        ng-class="{'selected': vm.selectedTechStack.indexOf(tech) !== -1, 'disabled': vm.selectedTechStack.length >= 3 && vm.selectedTechStack.indexOf(tech) === -1}">
+                        <input 
+                            type="checkbox"
+                            ng-model="techSelected"
+                            ng-checked="vm.selectedTechStack.indexOf(tech) !== -1"
+                            ng-click="vm.onTechStackChange()"
+                            ng-disabled="vm.disabled || (vm.selectedTechStack.length >= 3 && vm.selectedTechStack.indexOf(tech) === -1)"
+                            ng-true-value="true"
+                            ng-false-value="false"
+                            ng-change="vm.selectedTechStack.indexOf(tech) !== -1 ? vm.selectedTechStack.splice(vm.selectedTechStack.indexOf(tech), 1) : vm.selectedTechStack.push(tech); vm.onTechStackChange()">
+                        <span class="tech-stack-label">{{ tech }}</span>
+                    </label>
+                </div>
+                
+                <!-- Selected Tech Stack Display -->
+                <div ng-if="vm.selectedTechStack.length > 0" class="selected-tech-stack">
+                    <strong>Selected:</strong>
+                    <span ng-repeat="tech in vm.selectedTechStack" class="tech-badge">
+                        {{ tech }}
+                        <button 
+                            type="button" 
+                            class="tech-remove"
+                            ng-click="vm.selectedTechStack.splice($index, 1); vm.onTechStackChange()"
+                            ng-disabled="vm.disabled">
+                            ×
+                        </button>
+                    </span>
+                </div>
+                
+                <!-- Tech Stack Error Display -->
+                <form-error-display 
+                  errors="vm.fieldErrors" 
+                  field-name="techStack" 
+                  error-type="field">
+                </form-error-display>
+            </div>
+        </div>
+
+        <!-- Selected Role Summary -->
+        <div ng-if="vm.isMainRoleSelected()" class="role-summary">
+            <h4>Selected Role:</h4>
+            <div class="role-display">
+                <span class="role-main">{{ vm.selectedMainRole }}</span>
+                <span ng-if="vm.selectedSubRole" class="role-sub">→ {{ vm.selectedSubRole }}</span>
+                <span ng-if="vm.selectedSpecialization" class="role-spec">→ {{ vm.selectedSpecialization }}</span>
+            </div>
+            
+            <div ng-if="vm.selectedTechStack.length > 0" class="tech-summary">
+                <strong>Tech Stack:</strong> {{ vm.selectedTechStack.join(', ') }}
+            </div>
+        </div>
+
+        <!-- Role Compatibility Error -->
+        <form-error-display 
+          errors="vm.fieldErrors" 
+          field-name="roleCompatibility" 
+          error-type="summary">
+        </form-error-display>
+
+        <!-- Validation Message -->
+        <div ng-if="vm.required && !vm.isValidSelection() && !vm.hasFieldError('mainRole') && !vm.hasFieldError('subRole')" class="validation-message alert alert-warning">
+            <i class="fas fa-exclamation-triangle"></i>
+            {{ vm.getValidationMessage() }}
+        </div>
+
+        <!-- Reset Button -->
+        <div class="form-actions" ng-if="vm.isMainRoleSelected()">
+            <button 
+                type="button" 
+                class="btn btn-secondary btn-sm"
+                ng-click="vm.resetSelection()"
+                ng-disabled="vm.disabled">
+                <i class="fas fa-undo"></i>
+                Reset Selection
+            </button>
+        </div>
+    </div>
+</div>

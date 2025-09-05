@@ -12,7 +12,6 @@ class UserBase(BaseModel):
     role: str
     target_roles: Optional[List[str]] = None
     experience_level: Optional[str] = None
-    institution_id: Optional[int] = None
 
 
 class UserCreate(UserBase):

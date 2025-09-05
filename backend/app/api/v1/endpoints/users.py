@@ -182,7 +182,6 @@ async def get_users(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
     role: Optional[str] = Query(None),
-    institution_id: Optional[int] = Query(None),
     admin_user: User = Depends(require_admin),
     db: Session = Depends(get_db)
 ):
@@ -193,8 +192,7 @@ async def get_users(
         users = user_service.get_users_list(
             skip=skip,
             limit=limit,
-            role=role,
-            institution_id=institution_id
+            role=role
         )
         return users
     except Exception as e:

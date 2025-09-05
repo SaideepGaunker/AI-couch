@@ -1,0 +1,98 @@
+<!-- Form Error Display Component Template -->
+<div ng-if="vm.hasErrors" class="form-error-display-container">
+    
+    <!-- Field Error Display -->
+    <div ng-if="vm.errorType === 'field'" 
+         ng-repeat="error in vm.displayErrors track by $index"
+         ng-class="vm.getErrorClass(error)"
+         role="alert"
+         aria-live="polite">
+        
+        <i ng-if="vm.showIcon" 
+           ng-class="vm.getIconClass(error)" 
+           class="me-1"
+           aria-hidden="true"></i>
+        
+        <span class="error-message">{{ error.message }}</span>
+        
+        <button ng-if="vm.dismissible" 
+                type="button" 
+                class="btn-close btn-close-sm ms-2" 
+                ng-click="vm.dismissError(error, $index)"
+                aria-label="Dismiss error"
+                title="Dismiss this error">
+        </button>
+    </div>
+
+    <!-- Summary Error Display -->
+    <div ng-if="vm.errorType === 'summary'" 
+         ng-class="vm.getErrorClass({type: 'summary'})"
+         role="alert"
+         aria-live="polite">
+        
+        <div class="d-flex align-items-start">
+            <i ng-if="vm.showIcon" 
+               ng-class="vm.getIconClass({type: 'summary'})" 
+               class="me-2 mt-1"
+               aria-hidden="true"></i>
+            
+            <div class="flex-grow-1">
+                <div ng-if="vm.displayErrors.length === 1" class="error-message">
+                    {{ vm.displayErrors[0].message }}
+                </div>
+                
+                <div ng-if="vm.displayErrors.length > 1">
+                    <div class="fw-bold mb-2">Please correct the following errors:</div>
+                    <ul class="mb-0 ps-3">
+                        <li ng-repeat="error in vm.displayErrors track by $index" 
+                            class="error-item">
+                            <strong>{{ error.field | titleCase }}:</strong> {{ error.message }}
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            
+            <button ng-if="vm.dismissible" 
+                    type="button" 
+                    class="btn-close" 
+                    ng-click="vm.dismissError(null, -1)"
+                    aria-label="Dismiss all errors"
+                    title="Dismiss all errors">
+            </button>
+        </div>
+    </div>
+
+    <!-- Inline Error Display -->
+    <div ng-if="vm.errorType === 'inline'" 
+         ng-repeat="error in vm.displayErrors track by $index"
+         ng-class="vm.getErrorClass(error)"
+         role="alert"
+         aria-live="polite">
+        
+        <i ng-if="vm.showIcon" 
+           ng-class="vm.getIconClass(error)" 
+           class="me-1"
+           aria-hidden="true"></i>
+        
+        <span class="error-message">{{ error.message }}</span>
+        
+        <button ng-if="vm.dismissible" 
+                type="button" 
+                class="btn btn-link btn-sm p-0 ms-2 text-danger" 
+                ng-click="vm.dismissError(error, $index)"
+                aria-label="Dismiss error"
+                title="Dismiss this error">
+            <i class="fas fa-times" aria-hidden="true"></i>
+        </button>
+    </div>
+</div>
+
+<!-- Screen reader only content for accessibility -->
+<div class="visually-hidden" aria-live="assertive" aria-atomic="true">
+    <span ng-if="vm.hasErrors && vm.displayErrors.length === 1">
+        Error: {{ vm.displayErrors[0].message }}
+    </span>
+    <span ng-if="vm.hasErrors && vm.displayErrors.length > 1">
+        {{ vm.displayErrors.length }} form errors found. Please review and correct.
+    </span>
+</div>

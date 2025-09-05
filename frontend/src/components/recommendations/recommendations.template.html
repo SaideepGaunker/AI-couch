@@ -1,0 +1,149 @@
+<!-- Recommendations Display Component Template -->
+<div class="recommendations-display">
+    <!-- Title -->
+    <div ng-if="vm.showTitle" class="recommendations-header mb-3">
+        <h5 class="mb-0">
+            <i class="fas fa-lightbulb me-2 text-warning"></i>
+            Personalized Recommendations
+        </h5>
+        <p class="text-muted small mb-0">Based on your recent performance</p>
+    </div>
+
+    <!-- Loading State -->
+    <div ng-if="vm.loading" class="recommendations-loading text-center py-4">
+        <div class="spinner-border spinner-border-sm text-primary me-2" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <span class="text-muted">Loading recommendations...</span>
+    </div>
+
+    <!-- Error State -->
+    <div ng-if="vm.error" class="alert alert-warning alert-sm">
+        <i class="fas fa-exclamation-triangle me-2"></i>
+        {{ vm.error }}
+    </div>
+
+    <!-- Recommendations Grid -->
+    <div ng-if="!vm.loading && vm.recommendations.length > 0" class="recommendations-grid">
+        <div class="row">
+            <div ng-repeat="recommendation in vm.recommendations track by recommendation.id" 
+                 class="col-md-6 col-lg-3 mb-3"
+                 ng-class="{'col-md-12': vm.recommendations.length === 1, 'col-md-6': vm.recommendations.length === 2}">
+                
+                <div class="recommendation-card card h-100" 
+                     ng-class="{'clicked': vm.feedbackSubmitted[recommendation.id]}">
+                    
+                    <!-- Card Header -->
+                    <div class="card-header bg-light border-0 pb-2">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="recommendation-type">
+                                <i ng-class="vm.getRecommendationIcon(recommendation.type)" 
+                                   class="text-primary me-1"></i>
+                                <span class="badge bg-light text-dark">{{ recommendation.type | uppercase }}</span>
+                            </div>
+                            <span class="badge" 
+                                  ng-class="vm.getProviderBadgeClass(recommendation.provider)">
+                                {{ recommendation.provider }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Card Body -->
+                    <div class="card-body">
+                        <h6 class="card-title">{{ recommendation.title }}</h6>
+                        <p class="card-text text-muted small">{{ recommendation.description }}</p>
+                        
+                        <!-- Metadata -->
+                        <div class="recommendation-meta mb-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="badge" ng-class="{
+                                    'bg-success': recommendation.difficulty === 'beginner',
+                                    'bg-warning': recommendation.difficulty === 'intermediate',
+                                    'bg-danger': recommendation.difficulty === 'advanced'
+                                }">
+                                    {{ recommendation.difficulty | uppercase }}
+                                </span>
+                                <small class="text-muted">
+                                    <i class="fas fa-clock me-1"></i>
+                                    {{ vm.formatDuration(recommendation.duration) }}
+                                </small>
+                            </div>
+                        </div>
+
+                        <!-- Tags -->
+                        <div ng-if="recommendation.tags && recommendation.tags.length > 0" 
+                             class="recommendation-tags mb-3">
+                            <span ng-repeat="tag in recommendation.tags | limitTo:3 track by $index" 
+                                  class="badge bg-secondary badge-sm me-1">
+                                {{ tag }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Card Footer -->
+                    <div class="card-footer bg-transparent border-0 pt-0">
+                        <!-- Action Button -->
+                        <button type="button" 
+                                class="btn btn-primary btn-sm w-100 mb-2"
+                                ng-click="vm.trackClick(recommendation)"
+                                ng-disabled="vm.feedbackSubmitted[recommendation.id] === 'clicked'">
+                            <i class="fas fa-external-link-alt me-1"></i>
+                            <span ng-if="recommendation.type === 'video'">Watch Now</span>
+                            <span ng-if="recommendation.type === 'course'">Start Course</span>
+                            <span ng-if="recommendation.type === 'article'">Read Article</span>
+                            <span ng-if="recommendation.type === 'book'">View Book</span>
+                            <span ng-if="recommendation.type === 'tutorial'">Start Tutorial</span>
+                            <span ng-if="recommendation.type === 'practice'">Practice Now</span>
+                            <span ng-if="!['video', 'course', 'article', 'book', 'tutorial', 'practice'].includes(recommendation.type)">
+                                View Resource
+                            </span>
+                        </button>
+
+                        <!-- Feedback Buttons -->
+                        <div class="recommendation-feedback">
+                            <div ng-if="!vm.feedbackSubmitted[recommendation.id]" 
+                                 class="d-flex justify-content-center gap-2">
+                                <button type="button" 
+                                        class="btn btn-outline-success btn-sm"
+                                        ng-click="vm.submitFeedback(recommendation, 'helpful')"
+                                        title="Mark as helpful">
+                                    <i class="fas fa-thumbs-up"></i>
+                                </button>
+                                <button type="button" 
+                                        class="btn btn-outline-danger btn-sm"
+                                        ng-click="vm.submitFeedback(recommendation, 'not_helpful')"
+                                        title="Mark as not helpful">
+                                    <i class="fas fa-thumbs-down"></i>
+                                </button>
+                            </div>
+                            
+                            <!-- Feedback Confirmation -->
+                            <div ng-if="vm.feedbackSubmitted[recommendation.id]" 
+                                 class="text-center">
+                                <small class="text-muted">
+                                    <i class="fas fa-check-circle text-success me-1"></i>
+                                    <span ng-if="vm.feedbackSubmitted[recommendation.id] === 'helpful'">
+                                        Thanks for your feedback!
+                                    </span>
+                                    <span ng-if="vm.feedbackSubmitted[recommendation.id] === 'not_helpful'">
+                                        We'll improve our recommendations
+                                    </span>
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Empty State -->
+    <div ng-if="!vm.loading && !vm.error && vm.recommendations.length === 0" 
+         class="recommendations-empty text-center py-4">
+        <i class="fas fa-search fa-2x text-muted mb-3"></i>
+        <h6 class="text-muted">No recommendations available</h6>
+        <p class="text-muted small mb-0">
+            Complete more interview sessions to get personalized recommendations
+        </p>
+    </div>
+</div>

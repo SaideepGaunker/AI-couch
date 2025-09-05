@@ -9,7 +9,7 @@ from datetime import datetime
 from fastapi import WebSocket, WebSocketDisconnect
 from sqlalchemy.orm import Session
 
-from app.services.body_language_service import BodyLanguageAnalyzer
+from app.services.body_language_service import PostureAnalyzer
 from app.services.audio_analysis_service import ToneAnalyzer
 from app.db.models import InterviewSession, User
 

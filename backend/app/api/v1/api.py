@@ -3,7 +3,8 @@ Main API router for v1 endpoints
 """
 from fastapi import APIRouter
 
-from app.api.v1.endpoints import auth, users, interviews, questions, feedback, analytics, admin, voice_analysis
+from app.api.v1.endpoints import auth, users, interviews, questions, feedback, analytics, admin, voice_analysis, recommendations, role_hierarchy, user_progress, error_monitoring, debug_gemini
+from app.api.v1 import difficulty_diagnostics
 
 api_router = APIRouter()
 
@@ -16,6 +17,12 @@ api_router.include_router(feedback.router, prefix="/feedback", tags=["feedback"]
 api_router.include_router(analytics.router, prefix="/analytics", tags=["analytics"])
 api_router.include_router(admin.router, prefix="/admin", tags=["admin"])
 api_router.include_router(voice_analysis.router, prefix="/interviews", tags=["voice-analysis"])
+api_router.include_router(recommendations.router, prefix="/recommendations", tags=["recommendations"])
+api_router.include_router(role_hierarchy.router, prefix="/roles", tags=["role-hierarchy"])
+api_router.include_router(user_progress.router, prefix="/progress", tags=["user-progress"])
+api_router.include_router(error_monitoring.router, prefix="/errors", tags=["error-monitoring"])
+api_router.include_router(difficulty_diagnostics.router, tags=["difficulty-diagnostics"])
+api_router.include_router(debug_gemini.router, prefix="/debug", tags=["debug"])
 
 # Try to include posture router (optional due to MediaPipe dependency)
 try:

@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en" ng-app="testApp">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Form Error Display Component Test</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- Component CSS -->
+    <link href="form-error-display.css" rel="stylesheet">
+    
+    <!-- AngularJS -->
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular.min.js"></script>
+</head>
+<body ng-controller="TestController as vm" class="p-4">
+    <div class="container">
+        <h1>Form Error Display Component Test</h1>
+        
+        <div class="row">
+            <div class="col-md-6">
+                <h3>Field Error Display</h3>
+                <div class="mb-3">
+                    <label class="form-label">Email</label>
+                    <input type="email" class="form-control" ng-class="{'is-invalid': vm.fieldErrors.email}">
+                    <form-error-display 
+                        errors="vm.fieldErrors" 
+                        field-name="email" 
+                        error-type="field">
+                    </form-error-display>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Password</label>
+                    <input type="password" class="form-control" ng-class="{'is-invalid': vm.fieldErrors.password}">
+                    <form-error-display 
+                        errors="vm.fieldErrors" 
+                        field-name="password" 
+                        error-type="field">
+                    </form-error-display>
+                </div>
+                
+                <button class="btn btn-primary me-2" ng-click="vm.setFieldErrors()">Show Field Errors</button>
+                <button class="btn btn-secondary" ng-click="vm.clearErrors()">Clear Errors</button>
+            </div>
+            
+            <div class="col-md-6">
+                <h3>Summary Error Display</h3>
+                <form-error-display 
+                    errors="vm.summaryErrors" 
+                    error-type="summary" 
+                    dismissible="true"
+                    on-dismiss="vm.dismissError(fieldName)">
+                </form-error-display>
+                
+                <button class="btn btn-warning me-2" ng-click="vm.setSummaryErrors()">Show Summary Errors</button>
+                <button class="btn btn-secondary" ng-click="vm.clearSummaryErrors()">Clear Summary</button>
+            </div>
+        </div>
+        
+        <div class="row mt-4">
+            <div class="col-12">
+                <h3>Inline Error Display</h3>
+                <div class="mb-3">
+                    <label class="form-label">Role Selection</label>
+                    <select class="form-control">
+                        <option>Select a role...</option>
+                    </select>
+                    <form-error-display 
+                        errors="vm.inlineErrors" 
+                        field-name="role" 
+                        error-type="inline" 
+                        dismissible="true"
+                        on-dismiss="vm.dismissInlineError(fieldName)">
+                    </form-error-display>
+                </div>
+                
+                <button class="btn btn-info me-2" ng-click="vm.setInlineErrors()">Show Inline Error</button>
+                <button class="btn btn-secondary" ng-click="vm.clearInlineErrors()">Clear Inline</button>
+            </div>
+        </div>
+        
+        <div class="row mt-4">
+            <div class="col-12">
+                <h3>Test Controls</h3>
+                <button class="btn btn-danger me-2" ng-click="vm.setAllErrors()">Show All Error Types</button>
+                <button class="btn btn-success" ng-click="vm.clearAllErrors()">Clear All Errors</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Test application
+        angular.module('testApp', [])
+            .controller('TestController', function() {
+                var vm = this;
+                
+                vm.fieldErrors = {};
+                vm.summaryErrors = {};
+                vm.inlineErrors = {};
+                
+                vm.setFieldErrors = function() {
+                    vm.fieldErrors = {
+                        email: 'Email is required',
+                        password: 'Password must be at least 8 characters'
+                    };
+                };
+                
+                vm.setSummaryErrors = function() {
+                    vm.summaryErrors = {
+                        mainRole: 'Please select a main role',
+                        subRole: 'Please select a sub role',
+                        techStack: 'Please select no more than 3 tech stack items'
+                    };
+                };
+                
+                vm.setInlineErrors = function() {
+                    vm.inlineErrors = {
+                        role: 'Selected role combination is not valid'
+                    };
+                };
+                
+                vm.setAllErrors = function() {
+                    vm.setFieldErrors();
+                    vm.setSummaryErrors();
+                    vm.setInlineErrors();
+                };
+                
+                vm.clearErrors = function() {
+                    vm.fieldErrors = {};
+                };
+                
+                vm.clearSummaryErrors = function() {
+                    vm.summaryErrors = {};
+                };
+                
+                vm.clearInlineErrors = function() {
+                    vm.inlineErrors = {};
+                };
+                
+                vm.clearAllErrors = function() {
+                    vm.fieldErrors = {};
+                    vm.summaryErrors = {};
+                    vm.inlineErrors = {};
+                };
+                
+                vm.dismissError = function(fieldName) {
+                    console.log('Dismissing error for field:', fieldName);
+                    if (fieldName && vm.summaryErrors[fieldName]) {
+                        delete vm.summaryErrors[fieldName];
+                    }
+                };
+                
+                vm.dismissInlineError = function(fieldName) {
+                    console.log('Dismissing inline error for field:', fieldName);
+                    if (fieldName && vm.inlineErrors[fieldName]) {
+                        delete vm.inlineErrors[fieldName];
+                    }
+                };
+            })
+            .component('formErrorDisplay', {
+                templateUrl: 'form-error-display.template.html',
+                controller: function() {
+                    // Simplified version for testing - include the actual component logic here
+                    var vm = this;
+                    
+                    vm.$onInit = function() {
+                        if (vm.errorType === undefined) vm.errorType = 'field';
+                        if (vm.showIcon === undefined) vm.showIcon = true;
+                        if (vm.dismissible === undefined) vm.dismissible = false;
+                        vm.updateDisplayErrors();
+                    };
+                    
+                    vm.$onChanges = function() {
+                        vm.updateDisplayErrors();
+                    };
+                    
+                    vm.updateDisplayErrors = function() {
+                        vm.displayErrors = [];
+                        vm.hasErrors = false;
+                        
+                        if (!vm.errors || typeof vm.errors !== 'object') return;
+                        
+                        if (vm.errorType === 'field' && vm.fieldName) {
+                            if (vm.errors[vm.fieldName]) {
+                                vm.displayErrors = [{
+                                    field: vm.fieldName,
+                                    message: vm.errors[vm.fieldName],
+                                    type: 'field'
+                                }];
+                                vm.hasErrors = true;
+                            }
+                        } else if (vm.errorType === 'summary') {
+                            vm.displayErrors = Object.keys(vm.errors).map(function(fieldName) {
+                                return {
+                                    field: fieldName,
+                                    message: vm.errors[fieldName],
+                                    type: 'summary'
+                                };
+                            });
+                            vm.hasErrors = vm.displayErrors.length > 0;
+                        } else if (vm.errorType === 'inline') {
+                            if (vm.fieldName && vm.errors[vm.fieldName]) {
+                                vm.displayErrors = [{
+                                    field: vm.fieldName,
+                                    message: vm.errors[vm.fieldName],
+                                    type: 'inline'
+                                }];
+                                vm.hasErrors = true;
+                            }
+                        }
+                    };
+                    
+                    vm.getErrorClass = function(error) {
+                        var baseClass = 'form-error-display';
+                        switch (error.type) {
+                            case 'field': return baseClass + ' form-error-display--field invalid-feedback d-block';
+                            case 'summary': return baseClass + ' form-error-display--summary alert alert-danger';
+                            case 'inline': return baseClass + ' form-error-display--inline text-danger small';
+                            default: return baseClass + ' invalid-feedback d-block';
+                        }
+                    };
+                    
+                    vm.getIconClass = function(error) {
+                        switch (error.type) {
+                            case 'field':
+                            case 'inline': return 'fas fa-exclamation-triangle';
+                            case 'summary': return 'fas fa-exclamation-circle';
+                            default: return 'fas fa-exclamation-triangle';
+                        }
+                    };
+                    
+                    vm.dismissError = function(error, index) {
+                        if (vm.dismissible && vm.onDismiss) {
+                            vm.onDismiss({ error: error, fieldName: error ? error.field : null });
+                        }
+                        if (index >= 0) {
+                            vm.displayErrors.splice(index, 1);
+                            vm.hasErrors = vm.displayErrors.length > 0;
+                        }
+                    };
+                },
+                controllerAs: 'vm',
+                bindings: {
+                    errors: '<',
+                    fieldName: '@',
+                    errorType: '@',
+                    showIcon: '<',
+                    dismissible: '<',
+                    onDismiss: '&'
+                }
+            });
+    </script>
+</body>
+</html>

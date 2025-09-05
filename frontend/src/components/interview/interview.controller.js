@@ -8,14 +8,15 @@
         .module('interviewPrepApp')
         .controller('InterviewController', InterviewController);
 
-    InterviewController.$inject = ['$location', '$timeout', '$interval', '$scope', 'AuthService', 'InterviewService', 'PostureService'];
+    InterviewController.$inject = ['$location', '$timeout', '$interval', '$scope', 'AuthService', 'InterviewService', 'PostureService', 'UnifiedDifficultyStateService', 'DifficultyDisplayService'];
 
-    function InterviewController($location, $timeout, $interval, $scope, AuthService, InterviewService, PostureService) {
+    function InterviewController($location, $timeout, $interval, $scope, AuthService, InterviewService, PostureService, UnifiedDifficultyStateService, DifficultyDisplayService) {
         var vm = this;
 
         // Properties
         vm.config = {
-            target_role: 'Marketing Manager',
+            target_role: null, // Will be set based on selectedRole
+            selectedRole: null, // New hierarchical role data
             session_type: 'mixed',
             difficulty: 'intermediate',
             duration: 30,
@@ -57,6 +58,11 @@
         vm.showPostureFeedback = false;
         vm.postureAnalysisActive = false;
 
+        // Difficulty state management properties
+        vm.currentDifficultyState = null;
+        vm.difficultyDisplay = null;
+        vm.difficultyChangeSubscription = null;
+
         // Methods
         vm.startInterview = startInterview;
         vm.startTest = startTest;
@@ -74,12 +80,19 @@
         vm.toggleRecording = toggleRecording;
         vm.formatTime = formatTime;
         vm.debugSession = debugSession;
+        vm.onRoleChange = onRoleChange;
         // Posture detection methods
         vm.togglePostureDetection = togglePostureDetection;
         vm.startPostureAnalysis = startPostureAnalysis;
         vm.stopPostureAnalysis = stopPostureAnalysis;
         vm.initializePostureDetection = initializePostureDetection;
         vm.triggerManualPostureAnalysis = triggerManualPostureAnalysis;
+
+        // Difficulty state management methods
+        vm.initializeDifficultyState = initializeDifficultyState;
+        vm.updateDifficultyDisplay = updateDifficultyDisplay;
+        vm.onDifficultyChange = onDifficultyChange;
+        vm.getDifficultyDisplayInfo = getDifficultyDisplayInfo;
 
         // Debug function
         function debugSession() {
@@ -116,6 +129,14 @@
             $timeout(function () {
                 startCamera();
             }, 1000);
+
+            // Cleanup on scope destroy
+            $scope.$on('$destroy', function() {
+                if (vm.difficultyChangeSubscription) {
+                    vm.difficultyChangeSubscription();
+                    vm.difficultyChangeSubscription = null;
+                }
+            });
         }
 
         function goToDashboard() {
@@ -131,9 +152,22 @@
             vm.loading = true;
             vm.error = '';
 
-            console.log('Starting interview with config:', vm.config);
+            // Prepare config with hierarchical role data
+            var sessionConfig = angular.copy(vm.config);
+            
+            // Add hierarchical role data if available
+            if (vm.config.selectedRole && vm.config.selectedRole.mainRole) {
+                sessionConfig.hierarchical_role = {
+                    main_role: vm.config.selectedRole.mainRole,
+                    sub_role: vm.config.selectedRole.subRole,
+                    specialization: vm.config.selectedRole.specialization,
+                    tech_stack: vm.config.selectedRole.techStack
+                };
+            }
 
-            InterviewService.startSession(vm.config)
+            console.log('Starting interview with config:', sessionConfig);
+
+            InterviewService.startSession(sessionConfig)
                 .then(function (response) {
                     console.log('Interview session started:', response);
                     vm.session = response.session;
@@ -168,6 +202,9 @@
                         // Initialize posture detection (optional)
                         initializePostureDetection();
                         
+                        // Initialize difficulty state management
+                        initializeDifficultyState();
+                        
                         // Auto-enable posture detection after a short delay
                         $timeout(function() {
                             if (vm.cameraActive && vm.session && vm.session.id) {
@@ -195,6 +232,9 @@
 
                         startTimers();
                         startCamera();
+                        
+                        // Initialize difficulty state management
+                        initializeDifficultyState();
                     }
                 })
                 .catch(function (error) {
@@ -211,12 +251,22 @@
             vm.error = '';
 
             var testConfig = {
-                target_role: 'Product Manager',
+                target_role: vm.config.target_role || 'General',
                 session_type: 'technical',
                 difficulty: 'advanced',
                 duration: 30,
                 question_count: 5
             };
+            
+            // Add hierarchical role data if available
+            if (vm.config.selectedRole && vm.config.selectedRole.mainRole) {
+                testConfig.hierarchical_role = {
+                    main_role: vm.config.selectedRole.mainRole,
+                    sub_role: vm.config.selectedRole.subRole,
+                    specialization: vm.config.selectedRole.specialization,
+                    tech_stack: vm.config.selectedRole.techStack
+                };
+            }
 
             console.log('Starting test session with config:', testConfig);
 
@@ -255,6 +305,9 @@
                         
                         // Initialize and auto-enable posture detection for test
                         initializePostureDetection();
+                        
+                        // Initialize difficulty state management
+                        initializeDifficultyState();
                         $timeout(function() {
                             if (vm.cameraActive && vm.session && vm.session.id) {
                                 console.log('Auto-enabling posture detection for test...');
@@ -411,8 +464,29 @@
             }
         }
 
+        function onRoleChange(role) {
+            console.log('Role changed:', role);
+            vm.config.selectedRole = role;
+            
+            // Update target_role for backward compatibility
+            if (role && role.displayName) {
+                vm.config.target_role = role.displayName;
+            } else if (role && role.mainRole) {
+                vm.config.target_role = role.mainRole;
+            }
+            
+            // Clear any previous errors
+            if (vm.error && vm.error.includes('role')) {
+                vm.error = '';
+            }
+        }
+
         function validateConfig() {
-            if (!vm.config.target_role || !vm.config.session_type ||
+            // Check if we have either hierarchical role or legacy role
+            var hasRole = (vm.config.selectedRole && vm.config.selectedRole.mainRole) || 
+                         vm.config.target_role;
+            
+            if (!hasRole || !vm.config.session_type ||
                 !vm.config.difficulty || !vm.config.duration || !vm.config.question_count) {
                 vm.error = 'Please fill in all required fields.';
                 return false;
@@ -679,6 +753,170 @@
             };
             
             console.log('Posture detection service initialized successfully');
+        }
+
+        // ==================== Difficulty State Management ====================
+
+        function initializeDifficultyState() {
+            if (!vm.session || !vm.session.id) {
+                console.warn('Cannot initialize difficulty state without session');
+                return;
+            }
+
+            console.log('Initializing difficulty state for session:', vm.session.id);
+
+            // Subscribe to difficulty changes for real-time updates
+            vm.difficultyChangeSubscription = UnifiedDifficultyStateService.subscribeToChanges(vm.onDifficultyChange);
+
+            // Load initial difficulty state
+            UnifiedDifficultyStateService.getSessionDifficultyState(vm.session.id)
+                .then(function(difficultyState) {
+                    vm.currentDifficultyState = difficultyState;
+                    vm.updateDifficultyDisplay();
+                    console.log('Difficulty state loaded for session:', vm.session.id, difficultyState);
+                })
+                .catch(function(error) {
+                    console.error('Error loading difficulty state:', error);
+                    // Use fallback from session data
+                    vm.currentDifficultyState = {
+                        session_id: vm.session.id,
+                        initial_difficulty: vm.session.difficulty_level || 'medium',
+                        current_difficulty: vm.session.difficulty_level || 'medium',
+                        final_difficulty: null,
+                        difficulty_changes: [],
+                        is_fallback: true
+                    };
+                    vm.updateDifficultyDisplay();
+                });
+        }
+
+        function updateDifficultyDisplay() {
+            if (!vm.currentDifficultyState) {
+                return;
+            }
+
+            UnifiedDifficultyStateService.getDifficultyForDisplay(vm.session.id)
+                .then(function(displayInfo) {
+                    vm.difficultyDisplay = displayInfo;
+                    
+                    // Update all difficulty-related UI elements
+                    updateDifficultyUIElements(displayInfo);
+                    
+                    console.log('Difficulty display updated:', displayInfo);
+                })
+                .catch(function(error) {
+                    console.error('Error updating difficulty display:', error);
+                    // Create fallback display
+                    vm.difficultyDisplay = createFallbackDifficultyDisplay();
+                });
+        }
+
+        function onDifficultyChange(changeData) {
+            if (changeData.sessionId !== vm.session.id) {
+                return; // Not for this session
+            }
+
+            console.log('Difficulty change received for session:', changeData);
+
+            // Update current state
+            if (vm.currentDifficultyState) {
+                vm.currentDifficultyState.current_difficulty = changeData.newDifficulty;
+                vm.currentDifficultyState.last_updated = changeData.timestamp;
+            }
+
+            // Update display
+            vm.updateDifficultyDisplay();
+
+            // Show notification to user
+            showDifficultyChangeNotification(changeData);
+        }
+
+        function getDifficultyDisplayInfo() {
+            if (!vm.difficultyDisplay) {
+                return {
+                    current: { label: 'Loading...', color: '#6c757d' },
+                    hasChanged: false
+                };
+            }
+            return vm.difficultyDisplay;
+        }
+
+        function updateDifficultyUIElements(displayInfo) {
+            try {
+                // Update difficulty badges and displays in the template
+                var difficultyElements = document.querySelectorAll('[data-session-id="' + vm.session.id + '"][data-difficulty-display]');
+                
+                difficultyElements.forEach(function(element) {
+                    element.textContent = displayInfo.current.label;
+                    element.style.color = displayInfo.current.color;
+                    element.setAttribute('data-current-difficulty', displayInfo.current.string);
+                    
+                    // Update badge classes if element has badge class
+                    if (element.classList.contains('badge')) {
+                        // Remove old badge classes
+                        element.classList.remove('bg-success', 'bg-warning', 'bg-danger', 'bg-info', 'bg-dark', 'bg-secondary');
+                        // Add new badge class
+                        var badgeClass = displayInfo.current.badgeClass.split(' ').pop(); // Get the bg-* class
+                        element.classList.add(badgeClass);
+                    }
+                });
+
+                // Trigger Angular digest cycle to update bindings
+                $timeout(function() {
+                    // This will trigger digest cycle
+                }, 0);
+
+            } catch (error) {
+                console.error('Error updating difficulty UI elements:', error);
+            }
+        }
+
+        function showDifficultyChangeNotification(changeData) {
+            // Create a temporary notification element
+            var notification = document.createElement('div');
+            notification.className = 'alert alert-info alert-dismissible fade show position-fixed';
+            notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; max-width: 300px;';
+            notification.innerHTML = 
+                '<i class="fas fa-info-circle me-2"></i>' +
+                '<strong>Difficulty Adjusted:</strong> ' + changeData.newDifficulty.charAt(0).toUpperCase() + changeData.newDifficulty.slice(1) +
+                '<br><small>' + (changeData.reason || 'Adaptive adjustment') + '</small>' +
+                '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
+
+            document.body.appendChild(notification);
+
+            // Auto-remove after 5 seconds
+            $timeout(function() {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 5000);
+        }
+
+        function createFallbackDifficultyDisplay() {
+            var fallbackDifficulty = vm.session.difficulty_level || 'medium';
+            var normalizedLevel = DifficultyDisplayService.normalizeDifficultyInput(fallbackDifficulty);
+            var difficultyInfo = DifficultyDisplayService.getDifficultyInfo(normalizedLevel);
+
+            return {
+                current: {
+                    level: normalizedLevel,
+                    string: fallbackDifficulty,
+                    label: difficultyInfo.label,
+                    color: difficultyInfo.color,
+                    icon: difficultyInfo.icon,
+                    badgeClass: difficultyInfo.badgeClass
+                },
+                initial: {
+                    level: normalizedLevel,
+                    string: fallbackDifficulty,
+                    label: difficultyInfo.label
+                },
+                final: null,
+                hasChanged: false,
+                isCompleted: false,
+                changeCount: 0,
+                error: 'Using fallback difficulty display'
+            };
         }
         
         function togglePostureDetection() {

@@ -43,6 +43,16 @@ body {
     font-size: 1.5rem;
 }
 
+/* Learning Recommendations */
+.hover-shadow {
+    transition: box-shadow 0.2s ease-in-out;
+}
+
+.hover-shadow:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transform: translateY(-1px);
+}
+
 /* Forms */
 .form-control {
     border-radius: 8px;

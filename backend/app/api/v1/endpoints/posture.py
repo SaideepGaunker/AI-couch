@@ -9,9 +9,9 @@ from sqlalchemy.orm import Session
 
 from app.core.dependencies import get_current_user
 from app.db.database import get_db
-# Try to import posture service (optional due to MediaPipe dependency)
+# Try to import body language service (optional due to MediaPipe dependency)
 try:
-    from app.services.posture_service import posture_service
+    from app.services.body_language_service import body_language_service
     POSTURE_SERVICE_AVAILABLE = True
 except ImportError as e:
     logger.warning(f"Posture service not available: {e}")
@@ -35,7 +35,7 @@ except ImportError as e:
                 "error": "Posture analysis not available - MediaPipe dependency issue"
             }
     
-    posture_service = DummyPostureService()
+    body_language_service = DummyPostureService()
 from app.schemas.user import UserResponse
 
 logger = logging.getLogger(__name__)
@@ -89,7 +89,7 @@ async def analyze_posture(
             raise HTTPException(status_code=404, detail="Interview session not found")
         
         # Analyze posture
-        result = await posture_service.analyze_frame_from_base64(
+        result = await body_language_service.analyze_frame_from_base64(
             request.image_data, 
             request.interview_id
         )
@@ -140,7 +140,7 @@ async def get_posture_summary(
             raise HTTPException(status_code=404, detail="Interview session not found")
         
         # Get posture summary
-        summary = await posture_service.get_session_posture_summary(interview_id)
+        summary = await body_language_service.get_session_posture_summary(interview_id)
         
         if "error" in summary:
             raise HTTPException(status_code=400, detail=summary["error"])
@@ -174,7 +174,7 @@ async def posture_websocket_endpoint(websocket: WebSocket, interview_id: int):
                 continue
             
             # Analyze posture
-            result = await posture_service.analyze_frame_from_base64(
+            result = await body_language_service.analyze_frame_from_base64(
                 data["image_data"], 
                 interview_id
             )

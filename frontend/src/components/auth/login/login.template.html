@@ -58,10 +58,17 @@
                 class="form-control" 
                 id="email"
                 ng-model="vm.loginForm.email"
+                ng-class="{'is-invalid': vm.hasFieldError('email')}"
                 placeholder="Enter your email"
                 ng-disabled="vm.loading"
+                ng-focus="vm.clearFieldError('email')"
                 required>
             </div>
+            <form-error-display 
+              errors="vm.fieldErrors" 
+              field-name="email" 
+              error-type="field">
+            </form-error-display>
           </div>
           
           <div class="mb-3">
@@ -75,10 +82,17 @@
                 class="form-control" 
                 id="password"
                 ng-model="vm.loginForm.password"
+                ng-class="{'is-invalid': vm.hasFieldError('password')}"
                 placeholder="Enter your password"
                 ng-disabled="vm.loading"
+                ng-focus="vm.clearFieldError('password')"
                 required>
             </div>
+            <form-error-display 
+              errors="vm.fieldErrors" 
+              field-name="password" 
+              error-type="field">
+            </form-error-display>
           </div>
           
           <div class="d-flex justify-content-between align-items-center mb-4">

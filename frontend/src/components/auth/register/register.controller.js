@@ -82,9 +82,9 @@
                     vm.success = 'Account created successfully! Please log in.';
                     
                     // Redirect to login after a short delay
-                    setTimeout(function() {
+                    setTimeout( () => {
                         $location.path('/login');
-                    }, 2000);
+                    }, 1000);
                 })
                 .catch(function(error) {
                     console.error('Registration error:', error);
