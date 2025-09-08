@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html ng-app="interviewPrepApp">
+<head>
+    <title>Interview Start Test</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/src/styles/common.css">
+    <!-- Google Fonts - Poppins for modern look -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        .success { color: #4caf50; }
+        .error { color: #f44336; }
+        .warning { color: #ff9800; }
+        pre { background: rgba(255, 255, 255, 0.1); padding: 10px; overflow-x: auto; border-radius: var(--glass-radius-sm); }
+        .test-section { margin: 20px 0; padding: 15px; }
+    </style>
+</head>
+<body ng-controller="TestController">
+    <div class="container">
+        <h1 class="mt-4 mb-4">Interview Start Test</h1>
+        
+        <div class="test-section glass-container">
+        <h2>1. Test Interview Session Start</h2>
+        <button ng-click="testStartSession()">Test Start Session</button>
+        <div ng-if="startResults">
+            <h3>Results:</h3>
+            <pre>{{startResults | json}}</pre>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>2. Test Practice Session</h2>
+        <button ng-click="testPracticeSession()">Test Practice Session</button>
+        <div ng-if="practiceResults">
+            <h3>Results:</h3>
+            <pre>{{practiceResults | json}}</pre>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>3. Test API Direct Call</h2>
+        <button ng-click="testDirectApi()">Test Direct API</button>
+        <div ng-if="apiResults">
+            <h3>Results:</h3>
+            <pre>{{apiResults | json}}</pre>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>4. Test Auth Status</h2>
+        <button ng-click="testAuth()">Check Auth</button>
+        <div ng-if="authResults">
+            <h3>Results:</h3>
+            <pre>{{authResults | json}}</pre>
+        </div>
+    </div>
+
+    <script>
+        angular.module('interviewPrepApp', [])
+            .service('MockApiService', function($q, $timeout) {
+                var service = {
+                    baseUrl: 'http://localhost:8000/api',
+                    postWithRetry: postWithRetry,
+                    post: post,
+                    get: get
+                };
+                
+                function postWithRetry(endpoint, data, options) {
+                    console.log('MockApiService.postWithRetry called:', endpoint, data);
+                    return post(endpoint, data, options);
+                }
+                
+                function post(endpoint, data, options) {
+                    console.log('MockApiService.post called:', endpoint, data);
+                    
+                    // Simulate API call
+                    return $timeout(function() {
+                        if (endpoint === '/interviews/start') {
+                            return {
+                                session_id: 'test-session-123',
+                                session: { id: 'test-session-123' },
+                                questions: [
+                                    {
+                                        id: 1,
+                                        question: 'Test question',
+                                        difficulty: 'medium'
+                                    }
+                                ]
+                            };
+                        } else if (endpoint === '/interviews/practice-again') {
+                            return {
+                                session_id: 'practice-session-456',
+                                session: { id: 'practice-session-456' }
+                            };
+                        }
+                        return { success: true };
+                    }, 500);
+                }
+                
+                function get(endpoint) {
+                    console.log('MockApiService.get called:', endpoint);
+                    return $timeout(function() {
+                        return { success: true, endpoint: endpoint };
+                    }, 300);
+                }
+                
+                return service;
+            })
+            .service('MockInterviewService', function($q, MockApiService) {
+                var service = {
+                    startSession: startSession,
+                    practiceAgain: practiceAgain
+                };
+                
+                function startSession(sessionConfig) {
+                    console.log('MockInterviewService.startSession called with:', sessionConfig);
+                    
+                    var sessionData = {
+                        session_type: sessionConfig.session_type,
+                        target_role: sessionConfig.target_role,
+                        duration: sessionConfig.duration,
+                        difficulty: sessionConfig.difficulty,
+                        question_count: sessionConfig.question_count
+                    };
+                    
+                    if (sessionConfig.hierarchical_role) {
+                        sessionData.hierarchical_role = sessionConfig.hierarchical_role;
+                    }
+                    
+                    return MockApiService.postWithRetry('/interviews/start', sessionData);
+                }
+                
+                function practiceAgain(originalSessionId) {
+                    console.log('MockInterviewService.practiceAgain called with:', originalSessionId);
+                    return MockApiService.post('/interviews/practice-again', { original_session_id: originalSessionId });
+                }
+                
+                return service;
+            })
+            .controller('TestController', ['$scope', '$injector', 'MockInterviewService', 'MockApiService', 
+                function($scope, $injector, MockInterviewService, MockApiService) {
+                
+                $scope.testStartSession = function() {
+                    console.log('Testing start session...');
+                    
+                    var testConfig = {
+                        session_type: 'interview',
+                        target_role: 'Software Engineer',
+                        duration: 30,
+                        difficulty: 'medium',
+                        question_count: 5,
+                        hierarchical_role: {
+                            main_role: 'Software Engineer',
+                            sub_role: 'Backend Developer',
+                            specialization: 'API Development',
+                            tech_stack: 'Node.js'
+                        }
+                    };
+                    
+                    MockInterviewService.startSession(testConfig)
+                        .then(function(response) {
+                            console.log('Start session success:', response);
+                            $scope.startResults = {
+                                success: true,
+                                response: response,
+                                timestamp: new Date().toISOString()
+                            };
+                        })
+                        .catch(function(error) {
+                            console.error('Start session error:', error);
+                            $scope.startResults = {
+                                success: false,
+                                error: error,
+                                timestamp: new Date().toISOString()
+                            };
+                        });
+                };
+                
+                $scope.testPracticeSession = function() {
+                    console.log('Testing practice session...');
+                    
+                    MockInterviewService.practiceAgain('original-session-123')
+                        .then(function(response) {
+                            console.log('Practice session success:', response);
+                            $scope.practiceResults = {
+                                success: true,
+                                response: response,
+                                timestamp: new Date().toISOString()
+                            };
+                        })
+                        .catch(function(error) {
+                            console.error('Practice session error:', error);
+                            $scope.practiceResults = {
+                                success: false,
+                                error: error,
+                                timestamp: new Date().toISOString()
+                            };
+                        });
+                };
+                
+                $scope.testDirectApi = function() {
+                    console.log('Testing direct API call...');
+                    
+                    MockApiService.get('/health')
+                        .then(function(response) {
+                            console.log('Direct API success:', response);
+                            $scope.apiResults = {
+                                success: true,
+                                response: response,
+                                timestamp: new Date().toISOString()
+                            };
+                        })
+                        .catch(function(error) {
+                            console.error('Direct API error:', error);
+                            $scope.apiResults = {
+                                success: false,
+                                error: error,
+                                timestamp: new Date().toISOString()
+                            };
+                        });
+                };
+                
+                $scope.testAuth = function() {
+                    console.log('Testing auth status...');
+                    
+                    try {
+                        // Try to get real AuthService if available
+                        var AuthService = $injector.get('AuthService');
+                        
+                        $scope.authResults = {
+                            serviceFound: true,
+                            isAuthenticated: AuthService.isAuthenticated ? AuthService.isAuthenticated() : 'Method not found',
+                            hasToken: AuthService.getToken ? !!AuthService.getToken() : 'Method not found',
+                            timestamp: new Date().toISOString()
+                        };
+                    } catch (error) {
+                        $scope.authResults = {
+                            serviceFound: false,
+                            error: error.message,
+                            timestamp: new Date().toISOString()
+                        };
+                    }
+                };
+            }]);
+    </script>
+</body>
+</html>

@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en" ng-app="interviewPrepApp">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controller Registration Test</title>
+</head>
+<body>
+    <div class="container" ng-controller="TestController as vm">
+        <h2>Controller Registration Test</h2>
+        <p>Test message: {{vm.message}}</p>
+        <p>InterviewChatController available: {{vm.controllerAvailable}}</p>
+        <p>Error: {{vm.error}}</p>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.3/angular.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.3/angular-route.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.3/angular-animate.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.3/angular-sanitize.min.js"></script>
+
+    <!-- App Scripts -->
+    <script src="./src/js/app.js"></script>
+
+    <!-- Service Scripts (minimal required) -->
+    <script src="./src/js/services/error-handling.service.js"></script>
+    <script src="./src/js/services/api.service.js"></script>
+    <script src="./src/js/services/auth.service.js"></script>
+    <script src="./src/js/services/difficulty-display.service.js"></script>
+    <script src="./src/js/services/session-settings.service.js"></script>
+    <script src="./src/js/services/unified-difficulty-state.service.js"></script>
+    <script src="./src/js/services/interview.service.js"></script>
+    <script src="./src/js/services/session-data.service.js"></script>
+    <script src="./src/js/services/posture.service.js"></script>
+    <script src="./src/js/services/voice-analysis.service.js"></script>
+
+    <!-- Interview Chat Controller -->
+    <script src="./src/components/interview-chat/interview-chat.controller.js"></script>
+
+    <script>
+        angular.module('interviewPrepApp')
+            .controller('TestController', ['$injector', function($injector) {
+                var vm = this;
+                vm.message = 'Test controller is working!';
+                vm.controllerAvailable = 'Checking...';
+                vm.error = '';
+
+                try {
+                    // Try to get the InterviewChatController
+                    var controller = $injector.get('InterviewChatController');
+                    vm.controllerAvailable = 'Yes - Controller found';
+                } catch (error) {
+                    vm.controllerAvailable = 'No - Controller not found';
+                    vm.error = error.message;
+                    console.error('Controller registration error:', error);
+                }
+
+                // Also check if the controller is registered in the module
+                try {
+                    var module = angular.module('interviewPrepApp');
+                    console.log('Module found:', module);
+                    console.log('Module requires:', module.requires);
+                } catch (moduleError) {
+                    console.error('Module error:', moduleError);
+                    vm.error += ' | Module error: ' + moduleError.message;
+                }
+            }]);
+    </script>
+</body>
+</html>

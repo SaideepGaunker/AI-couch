@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html ng-app="interviewPrepApp">
+<head>
+    <title>Interview Loading Comprehensive Debug</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
+        .success { color: green; }
+        .error { color: red; }
+        .warning { color: orange; }
+        .info { color: blue; }
+        pre { background: #f5f5f5; padding: 10px; overflow-x: auto; }
+        button { margin: 5px; padding: 8px 15px; }
+    </style>
+</head>
+<body ng-controller="DebugController">
+    <h1>Interview Loading Comprehensive Debug</h1>
+    
+    <div class="test-section">
+        <h2>1. Service Availability Check</h2>
+        <button ng-click="checkServices()">Check All Services</button>
+        <div ng-if="serviceResults">
+            <h3>Service Status:</h3>
+            <ul>
+                <li ng-repeat="(service, status) in serviceResults" 
+                    ng-class="status.available ? 'success' : 'error'">
+                    {{service}}: {{status.available ? 'Available' : 'Missing'}}
+                    <span ng-if="status.error"> - {{status.error}}</span>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>2. API Connectivity Test</h2>
+        <button ng-click="testApiConnectivity()">Test API Connection</button>
+        <div ng-if="apiResults">
+            <h3>API Test Results:</h3>
+            <pre>{{apiResults | json}}</pre>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>3. Interview Service Methods Test</h2>
+        <button ng-click="testInterviewMethods()">Test Interview Methods</button>
+        <div ng-if="interviewResults">
+            <h3>Interview Service Results:</h3>
+            <pre>{{interviewResults | json}}</pre>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>4. Session Configuration Test</h2>
+        <button ng-click="testSessionConfig()">Test Session Config</button>
+        <div ng-if="configResults">
+            <h3>Configuration Results:</h3>
+            <pre>{{configResults | json}}</pre>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>5. Error Handling Test</h2>
+        <button ng-click="testErrorHandling()">Test Error Handling</button>
+        <div ng-if="errorResults">
+            <h3>Error Handling Results:</h3>
+            <pre>{{errorResults | json}}</pre>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>6. Authentication Status</h2>
+        <button ng-click="checkAuth()">Check Authentication</button>
+        <div ng-if="authResults">
+            <h3>Auth Status:</h3>
+            <pre>{{authResults | json}}</pre>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>7. Console Logs</h2>
+        <div id="console-logs">
+            <pre id="log-output"></pre>
+        </div>
+    </div>
+
+    <script>
+        // Override console methods to capture logs
+        var originalLog = console.log;
+        var originalError = console.error;
+        var originalWarn = console.warn;
+        var logs = [];
+
+        function captureLog(level, args) {
+            var message = Array.prototype.slice.call(args).join(' ');
+            logs.push({
+                level: level,
+                message: message,
+                timestamp: new Date().toISOString()
+            });
+            updateLogDisplay();
+        }
+
+        console.log = function() {
+            originalLog.apply(console, arguments);
+            captureLog('log', arguments);
+        };
+
+        console.error = function() {
+            originalError.apply(console, arguments);
+            captureLog('error', arguments);
+        };
+
+        console.warn = function() {
+            originalWarn.apply(console, arguments);
+            captureLog('warn', arguments);
+        };
+
+        function updateLogDisplay() {
+            var logOutput = document.getElementById('log-output');
+            if (logOutput) {
+                logOutput.textContent = logs.map(function(log) {
+                    return '[' + log.timestamp + '] ' + log.level.toUpperCase() + ': ' + log.message;
+                }).join('\n');
+            }
+        }
+
+        angular.module('interviewPrepApp', [])
+            .controller('DebugController', ['$scope', '$injector', function($scope, $injector) {
+                
+                $scope.checkServices = function() {
+                    console.log('Checking service availability...');
+                    $scope.serviceResults = {};
+                    
+                    var services = [
+                        'InterviewService',
+                        'ApiService', 
+                        'ErrorHandlingService',
+                        'SessionSettingsService',
+                        'DifficultyDisplayService',
+                        'AuthService'
+                    ];
+                    
+                    services.forEach(function(serviceName) {
+                        try {
+                            var service = $injector.get(serviceName);
+                            $scope.serviceResults[serviceName] = {
+                                available: true,
+                                methods: Object.getOwnPropertyNames(service).filter(function(prop) {
+                                    return typeof service[prop] === 'function';
+                                })
+                            };
+                        } catch (error) {
+                            $scope.serviceResults[serviceName] = {
+                                available: false,
+                                error: error.message
+                            };
+                        }
+                    });
+                };
+
+                $scope.testApiConnectivity = function() {
+                    console.log('Testing API connectivity...');
+                    try {
+                        var ApiService = $injector.get('ApiService');
+                        
+                        // Test basic API methods
+                        $scope.apiResults = {
+                            baseUrl: ApiService.baseUrl || 'Not set',
+                            methods: {
+                                get: typeof ApiService.get === 'function',
+                                post: typeof ApiService.post === 'function',
+                                postWithRetry: typeof ApiService.postWithRetry === 'function'
+                            }
+                        };
+                        
+                        // Try a simple API call
+                        if (ApiService.get) {
+                            ApiService.get('/health')
+                                .then(function(response) {
+                                    $scope.apiResults.healthCheck = { success: true, data: response };
+                                })
+                                .catch(function(error) {
+                                    $scope.apiResults.healthCheck = { success: false, error: error };
+                                });
+                        }
+                    } catch (error) {
+                        $scope.apiResults = { error: error.message };
+                    }
+                };
+
+                $scope.testInterviewMethods = function() {
+                    console.log('Testing Interview Service methods...');
+                    try {
+                        var InterviewService = $injector.get('InterviewService');
+                        
+                        $scope.interviewResults = {
+                            serviceAvailable: true,
+                            methods: {
+                                startSession: typeof InterviewService.startSession === 'function',
+                                practiceAgain: typeof InterviewService.practiceAgain === 'function',
+                                getSession: typeof InterviewService.getSession === 'function'
+                            }
+                        };
+                        
+                        // Test method signatures
+                        if (InterviewService.startSession) {
+                            console.log('startSession method found');
+                        } else {
+                            console.error('startSession method missing!');
+                        }
+                        
+                    } catch (error) {
+                        $scope.interviewResults = { error: error.message };
+                    }
+                };
+
+                $scope.testSessionConfig = function() {
+                    console.log('Testing session configuration...');
+                    
+                    // Test typical session config
+                    var testConfig = {
+                        session_type: 'interview',
+                        target_role: 'Software Engineer',
+                        duration: 30,
+                        difficulty: 'medium',
+                        question_count: 5,
+                        hierarchical_role: {
+                            main_role: 'Software Engineer',
+                            sub_role: 'Backend Developer',
+                            specialization: 'API Development',
+                            tech_stack: 'Node.js'
+                        }
+                    };
+                    
+                    $scope.configResults = {
+                        testConfig: testConfig,
+                        validation: {
+                            hasRequiredFields: !!(testConfig.session_type && testConfig.target_role),
+                            hasHierarchicalRole: !!testConfig.hierarchical_role,
+                            configSize: JSON.stringify(testConfig).length
+                        }
+                    };
+                };
+
+                $scope.testErrorHandling = function() {
+                    console.log('Testing error handling...');
+                    try {
+                        var ErrorHandlingService = $injector.get('ErrorHandlingService');
+                        
+                        $scope.errorResults = {
+                            serviceAvailable: true,
+                            methods: {
+                                retryOperation: typeof ErrorHandlingService.retryOperation === 'function',
+                                handleError: typeof ErrorHandlingService.handleError === 'function'
+                            }
+                        };
+                    } catch (error) {
+                        $scope.errorResults = { 
+                            serviceAvailable: false,
+                            error: error.message 
+                        };
+                    }
+                };
+
+                $scope.checkAuth = function() {
+                    console.log('Checking authentication status...');
+                    try {
+                        var AuthService = $injector.get('AuthService');
+                        
+                        $scope.authResults = {
+                            serviceAvailable: true,
+                            methods: {
+                                isAuthenticated: typeof AuthService.isAuthenticated === 'function',
+                                getToken: typeof AuthService.getToken === 'function'
+                            }
+                        };
+                        
+                        if (AuthService.isAuthenticated) {
+                            $scope.authResults.isAuthenticated = AuthService.isAuthenticated();
+                        }
+                        
+                        if (AuthService.getToken) {
+                            var token = AuthService.getToken();
+                            $scope.authResults.hasToken = !!token;
+                            $scope.authResults.tokenLength = token ? token.length : 0;
+                        }
+                        
+                    } catch (error) {
+                        $scope.authResults = { 
+                            serviceAvailable: false,
+                            error: error.message 
+                        };
+                    }
+                };
+
+                // Auto-run basic checks on load
+                setTimeout(function() {
+                    $scope.$apply(function() {
+                        $scope.checkServices();
+                    });
+                }, 1000);
+            }]);
+    </script>
+</body>
+</html>

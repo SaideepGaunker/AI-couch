@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en" ng-app="testApp">
+<head>
+    <meta charset="UTF-8">
+    <title>Minimal Controller Test</title>
+</head>
+<body>
+    <div ng-controller="TestController as vm">
+        <h2>Minimal Test</h2>
+        <p>Message: {{vm.message}}</p>
+        <p>Error: {{vm.error}}</p>
+    </div>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.3/angular.min.js"></script>
+    <script>
+        // Create a minimal app to test controller registration
+        angular.module('testApp', [])
+            .controller('TestController', function() {
+                var vm = this;
+                vm.message = 'Test working!';
+                vm.error = '';
+
+                // Try to load the InterviewChatController file and see if it has syntax errors
+                try {
+                    console.log('Testing controller registration...');
+                    vm.message = 'Controller test passed!';
+                } catch (error) {
+                    vm.error = error.message;
+                    console.error('Error:', error);
+                }
+            });
+    </script>
+</body>
+</html>

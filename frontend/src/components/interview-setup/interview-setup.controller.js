@@ -27,12 +27,21 @@
         
         // UI state
         vm.showLegacyRoleSelector = false;
-        vm.showQuickTestInfo = false;
+        vm.showQuickTestInfo = true; // Show quick test info by default
+        vm.showQuickTestCustomization = false;
         vm.quickTestSettings = {
             question_count: 3,
             question_count_source: 'default',
             distribution_summary: null
         };
+        
+        // Initialize custom quick test settings
+        vm.customQuickTestSettings = {
+            question_count: 3,
+            difficulty: 'medium',
+            duration: 15
+        };
+        vm.customOverrideSettings = null;
         
         vm.loading = false;
         vm.error = '';
@@ -55,6 +64,7 @@
         vm.onRoleChange = onRoleChange;
         vm.customizeQuickTest = customizeQuickTest;
         vm.loadQuickTestSettings = loadQuickTestSettings;
+        vm.applyMainFormToQuickTest = applyMainFormToQuickTest;
         vm.applyCustomSettings = applyCustomSettings;
         vm.loadPracticeSessionSettings = loadPracticeSessionSettings;
 
@@ -169,12 +179,46 @@
             vm.loading = true;
             vm.error = '';
 
+            // Validate role selection before starting quick test
+            var hasRole = (vm.config.selectedRole && vm.config.selectedRole.mainRole) || 
+                         vm.config.target_role;
+            
+            if (!hasRole) {
+                vm.error = 'Please select a target role before starting the quick test.';
+                vm.loading = false;
+                return;
+            }
+
             // Prepare override settings for quick test
             var overrideSettings = {};
             
             // Apply custom settings if user has customized
             if (vm.customOverrideSettings) {
+                // Make a deep copy to avoid reference issues
                 overrideSettings = angular.copy(vm.customOverrideSettings);
+                
+                // Ensure question_count is an integer
+                if (overrideSettings.question_count) {
+                    overrideSettings.question_count = parseInt(overrideSettings.question_count);
+                }
+                
+                // Add save_as_preference flag to persist user's custom settings
+                overrideSettings.save_as_preference = true;
+                
+                console.log('Using custom override settings with save_as_preference:', overrideSettings);
+            } else if (vm.quickTestSettings && vm.quickTestSettings.question_count) {
+                // Always include question count from quickTestSettings if not already overridden
+                overrideSettings.question_count = parseInt(vm.quickTestSettings.question_count);
+                
+                // Include difficulty from quickTestSettings if available
+                if (vm.quickTestSettings.difficulty) {
+                    overrideSettings.difficulty = vm.quickTestSettings.difficulty;
+                } else if (vm.config.difficulty) {
+                    // Fall back to main config difficulty
+                    overrideSettings.difficulty = vm.config.difficulty;
+                }
+                
+                console.log('Using quick test settings:', overrideSettings);
             }
             
             // Only override if user has explicitly changed from defaults
@@ -410,7 +454,15 @@
                             distribution_summary: 'Theory: 20%, Coding: 40%, Aptitude: 40%',
                             inherited_from_session_id: lastSession.id,
                             last_session_role: lastSession.target_role,
-                            last_session_difficulty: lastSession.difficulty_level
+                            last_session_difficulty: lastSession.difficulty_level,
+                            duration: lastSession.duration || 15
+                        };
+                        
+                        // Initialize custom settings with inherited values
+                        vm.customQuickTestSettings = {
+                            question_count: questionCount,
+                            difficulty: lastSession.difficulty_level || 'medium',
+                            duration: lastSession.duration || 15
                         };
                         
                         console.log('Quick test will inherit settings from session:', lastSession.id);
@@ -419,7 +471,15 @@
                         vm.quickTestSettings = {
                             question_count: 3,
                             question_count_source: 'default',
-                            distribution_summary: 'Theory: 1, Coding: 1, Aptitude: 1'
+                            distribution_summary: 'Theory: 1, Coding: 1, Aptitude: 1',
+                            duration: 15
+                        };
+                        
+                        // Initialize custom settings with defaults
+                        vm.customQuickTestSettings = {
+                            question_count: 3,
+                            difficulty: 'medium',
+                            duration: 15
                         };
                         
                         console.log('No previous sessions found, using defaults');
@@ -431,7 +491,15 @@
                     vm.quickTestSettings = {
                         question_count: 3,
                         question_count_source: 'default',
-                        distribution_summary: 'Theory: 1, Coding: 1, Aptitude: 1'
+                        distribution_summary: 'Theory: 1, Coding: 1, Aptitude: 1',
+                        duration: 15
+                    };
+                    
+                    // Initialize custom settings with defaults
+                    vm.customQuickTestSettings = {
+                        question_count: 3,
+                        difficulty: 'medium',
+                        duration: 15
                     };
                 });
         }
@@ -443,18 +511,50 @@
             
             if (vm.showQuickTestCustomization) {
                 // Initialize customization form with current settings
-                vm.customQuickTestSettings = {
-                    question_count: vm.quickTestSettings.question_count,
-                    target_role: vm.config.target_role,
-                    difficulty: vm.config.difficulty || 'medium'
-                };
+                // First check if we have custom override settings
+                var difficultyValue = 'medium';
+                
+                if (vm.customOverrideSettings && vm.customOverrideSettings.difficulty) {
+                    difficultyValue = vm.customOverrideSettings.difficulty;
+                } else if (vm.quickTestSettings && vm.quickTestSettings.difficulty) {
+                    difficultyValue = vm.quickTestSettings.difficulty;
+                } else if (vm.config && vm.config.difficulty) {
+                    difficultyValue = vm.config.difficulty;
+                }
+                
+                // Get duration value from various sources
+                var durationValue = 15; // Default
+                if (vm.customOverrideSettings && vm.customOverrideSettings.duration) {
+                    durationValue = vm.customOverrideSettings.duration;
+                } else if (vm.quickTestSettings && vm.quickTestSettings.duration) {
+                    durationValue = vm.quickTestSettings.duration;
+                } else if (vm.config && vm.config.duration) {
+                    durationValue = vm.config.duration;
+                }
+                
+                // Get question count value
+                var questionCountValue = 3; // Default
+                if (vm.customOverrideSettings && vm.customOverrideSettings.question_count) {
+                    questionCountValue = vm.customOverrideSettings.question_count;
+                } else if (vm.quickTestSettings && vm.quickTestSettings.question_count) {
+                    questionCountValue = vm.quickTestSettings.question_count;
+                }
+                
+                // Update the custom settings object
+                vm.customQuickTestSettings.question_count = questionCountValue;
+                vm.customQuickTestSettings.difficulty = difficultyValue;
+                vm.customQuickTestSettings.duration = durationValue;
+                
+                console.log('Initialized quick test customization with:', vm.customQuickTestSettings);
             }
         }
 
         function applyCustomSettings() {
             // Update quick test settings with custom values
-            vm.quickTestSettings.question_count = vm.customQuickTestSettings.question_count;
+            vm.quickTestSettings.question_count = parseInt(vm.customQuickTestSettings.question_count);
             vm.quickTestSettings.question_count_source = 'user_override';
+            vm.quickTestSettings.difficulty = vm.customQuickTestSettings.difficulty;
+            vm.quickTestSettings.duration = parseInt(vm.customQuickTestSettings.duration);
             
             // Update distribution summary based on new question count
             var count = parseInt(vm.customQuickTestSettings.question_count);
@@ -469,13 +569,51 @@
             }
             
             // Store custom settings for use in startTest
+            // Make sure we're storing the values as the correct types
             vm.customOverrideSettings = {
-                question_count: vm.customQuickTestSettings.question_count,
-                difficulty: vm.customQuickTestSettings.difficulty
+                question_count: parseInt(vm.customQuickTestSettings.question_count),
+                difficulty: vm.customQuickTestSettings.difficulty,
+                duration: parseInt(vm.customQuickTestSettings.duration),
+                save_as_preference: true // Always save custom settings as preference
             };
             
+            // Also update the main config to keep UI consistent
+            vm.config.question_count = parseInt(vm.customQuickTestSettings.question_count);
+            vm.config.difficulty = vm.customQuickTestSettings.difficulty;
+            vm.config.duration = parseInt(vm.customQuickTestSettings.duration);
+            
             vm.showQuickTestCustomization = false;
-            console.log('Applied custom quick test settings:', vm.customOverrideSettings);
+            console.log('Applied custom quick test settings with save_as_preference:', vm.customOverrideSettings);
+        }
+
+        function applyMainFormToQuickTest() {
+            // Apply current main form settings to quick test
+            vm.customOverrideSettings = {
+                question_count: parseInt(vm.config.question_count),
+                difficulty: vm.config.difficulty,
+                duration: parseInt(vm.config.duration),
+                save_as_preference: false // Don't save as preference, just use for this test
+            };
+            
+            // Update quick test settings display
+            vm.quickTestSettings.question_count = parseInt(vm.config.question_count);
+            vm.quickTestSettings.question_count_source = 'user_override';
+            vm.quickTestSettings.difficulty = vm.config.difficulty;
+            vm.quickTestSettings.duration = parseInt(vm.config.duration);
+            
+            // Update distribution summary
+            var count = parseInt(vm.config.question_count);
+            if (count === 3) {
+                vm.quickTestSettings.distribution_summary = 'Theory: 1, Coding: 1, Aptitude: 1';
+            } else if (count === 5) {
+                vm.quickTestSettings.distribution_summary = 'Theory: 1, Coding: 2, Aptitude: 2';
+            } else if (count === 7) {
+                vm.quickTestSettings.distribution_summary = 'Theory: 1, Coding: 3, Aptitude: 3';
+            } else if (count === 10) {
+                vm.quickTestSettings.distribution_summary = 'Theory: 2, Coding: 4, Aptitude: 4';
+            }
+            
+            console.log('Applied main form settings to quick test:', vm.customOverrideSettings);
         }
 
         function loadPracticeSessionSettings() {

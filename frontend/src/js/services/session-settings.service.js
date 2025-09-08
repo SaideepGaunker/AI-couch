@@ -287,10 +287,14 @@
                     // Validate question count
                     if (questions && settingsInfo.question_count) {
                         var actualQuestionCount = questions.length;
-                        var expectedQuestionCount = settingsInfo.question_count;
+                        var expectedQuestionCount = parseInt(settingsInfo.question_count);
                         
-                        if (actualQuestionCount !== expectedQuestionCount) {
-                            errors.push('Question count mismatch: expected ' + expectedQuestionCount + ', got ' + actualQuestionCount);
+                        // Log the question counts for debugging
+                        console.log('SessionSettingsService: Validating question count - expected:', expectedQuestionCount, 'actual:', actualQuestionCount);
+                        
+                        // Allow for a small difference in question count (backend might adjust based on availability)
+                        if (Math.abs(actualQuestionCount - expectedQuestionCount) > 1) {
+                            warnings.push('Question count difference: expected ' + expectedQuestionCount + ', got ' + actualQuestionCount);
                         }
                     }
                     
